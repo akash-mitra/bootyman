@@ -138,7 +138,22 @@ class DigitalOceanService
         $booty[ 'internal_machine_id' ] = $droplet->id;
         $booty->status = 'Provisioning In-progress';
         $booty->save();
+    }
 
+
+    public function finaliseBooty (Booty $booty)
+    {
+        $status = 'Live';
+        try {
+            $droplet = DigitalOcean::droplet()->getById($booty->internal_machine_id);
+            $booty->ip = $droplet->networks[0]->ipAddress;
+            $booty->ssl_renewed_at = now();
+        } catch(\Exception $e) {
+            $status = 'Provisioning Error';
+        }
+
+        $booty->status = $status;
+        $booty->save();
     }
 
     

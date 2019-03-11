@@ -35,7 +35,7 @@ class BootyController extends Controller
             $request->input('owner_email'),
             empty($request->input('name')) ? '' : $request->input('name'),
             empty($request->input('size')) ? 's-1vcpu-1gb' : $request->input('size'),
-            empty($request->input('region')) ? 'sgp-1' : $request->input('region'),
+            empty($request->input('region')) ? 'sgp1' : $request->input('region'),
             empty($request->input('provider')) ? 'DO' : $request->input('provider')
         );
     }

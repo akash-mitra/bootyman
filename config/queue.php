@@ -72,6 +72,14 @@ return [
             'queue' => 'default',
             'retry_after' => 600,
             'block_for' => 5,
+        ],
+
+        'booty-assembly-line' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+            'queue' => 'default',
+            'retry_after' => 60,
+            'block_for' => 5,
         ]
     ],
 

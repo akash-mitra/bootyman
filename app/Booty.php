@@ -3,7 +3,9 @@
 namespace App;
 
 use App\Jobs\orderBootyProvision;
+use App\Jobs\confirmBootyProvision;
 use Illuminate\Database\Eloquent\Model;
+use App\CloudProviders\DigitalOceanService;
 
 class Booty extends Model
 {
@@ -45,6 +47,9 @@ class Booty extends Model
 
         $booty->save();
         orderBootyProvision::dispatch($cloudProvider, $booty)->onConnection( 'booty-assembly-line' );
+        confirmBootyProvision::dispatch($cloudProvider, $booty)->onConnection( 'booty-assembly-line' )
+            ->delay(now()->addMinutes(5));
+
         return $booty;
     }
 
