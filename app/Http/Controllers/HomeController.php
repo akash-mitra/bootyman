@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Booty;
+use App\Snapshot;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use App\CloudProviders\DigitalOceanService;
 
 class HomeController extends Controller
 {
 
-    public function welcome () {
+    public function welcome () 
+    {
         return view('welcome');
     }
     
@@ -20,5 +25,68 @@ class HomeController extends Controller
     public function index()
     {
         return view('home');
+    }
+
+    public function snapshots()
+    {
+        $snapshots = Snapshot::latest()->paginate(25);
+        return view( 'snapshots', compact('snapshots'));
+    }
+
+    public function snapshot($snapshot_id)
+    {
+        $snapshot = Snapshot::findOrfail($snapshot_id);
+        return view('snapshot', compact('snapshot'));
+    }
+
+    public function booties()
+    {
+        $booties = Booty::latest()->paginate(25);
+        return view('booties', compact('booties'));
+    }
+
+    public function cloud()
+    {
+        $cloud = DigitalOceanService::resources();
+        return view('cloud', compact('cloud'));
+    }
+
+    public function token()
+    {
+        return view('token');
+    }
+
+
+    public function passwordShow()
+    {
+        return view('password');
+    }
+
+
+    public function passwordChange(Request $request)
+    {    
+        $this->validate($request, [
+            '_token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:8|confirmed|regex:/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/',
+            'current_password' => 'required' 
+        ]);
+
+        $credentials = $request->only('email', 'password', 'password_confirmation', 'current_password');
+        $user = \Auth::user();
+
+        // make sure supplied current password is correct password of the user
+        if (Hash::check( $credentials['current_password'], $user->password)) 
+        {
+            // change the password
+            $user->password = Hash::make( $credentials['password'] );
+            $user->save();
+            $request->session()->flash('status.success', 'Password changed successfully! Please re-login.');
+        }
+        else {
+            $request->session()->flash('status.failure', 'Wrong password supplied for the current user');
+            
+        }
+        return redirect()->back();
     }
 }

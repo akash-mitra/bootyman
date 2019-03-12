@@ -25,6 +25,12 @@ class Booty extends Model
         'ssl_renewed_at'
     ];
 
+
+    public function snapshot()
+    {
+        return $this->belongsTo(Snapshot::class);
+    }
+
     public static function provision ($orderId, $ownerEmail, $name, $size, $region, $provider)
     {
         $cloudProvider = self::getCloudProvider($provider);

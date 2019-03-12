@@ -15,6 +15,13 @@ class Snapshot extends Model
 {
     protected $fillable = [ 'name', 'provider', 'resource_id', 'internal_snapshot_id', 'source_code', 'branch', 'commit_id', 'type', 'status', 'env'];
 
+
+    public function booties()
+    {
+        return $this->hasMany(Booty::class);
+    }
+
+
     /**
      * Orders the cloud service provider to build a new image 
      * and then configures the application using code from source control.

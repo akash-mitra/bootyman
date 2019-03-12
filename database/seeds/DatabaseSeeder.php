@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
         DB::table('users')->insert([
             'name' => 'Super Admin',
             'email' => 'akashmitra@gmail.com',
-            'password' => Hash::make(env('ADMIN_PASSWORD')),
+            'password' => Hash::make(env('ADMIN_PASSWORD', 'secret')),
             'email_verified_at' => now(),
             'remember_token' => Str::random(10),
             'created_at' => now(),

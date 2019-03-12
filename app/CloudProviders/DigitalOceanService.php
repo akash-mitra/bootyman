@@ -156,6 +156,15 @@ class DigitalOceanService
         $booty->save();
     }
 
+
+    public static function resources ()
+    {
+        return [
+            "machines" => DigitalOcean::droplet()->getAll(),
+            "images" => DigitalOcean::image()->getAll(['private' => true])
+        ];
+    }   
+
     
 
 }
