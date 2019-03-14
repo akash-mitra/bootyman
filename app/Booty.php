@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Illuminate\Http\Request;
 use App\Jobs\orderVMCreate;
 use App\Jobs\orderVMDelete;
 use App\Jobs\confirmVMStatus;
@@ -73,32 +74,30 @@ class Booty extends Model
      * Orders the cloud service provider to build a new image 
      * and then configures the application using code from source control.
      *
-     * @param String $sourceCode
-     * @param String $commitId
-     * @param String $branch
-     * @param String $type
-     * @param String $provider
-     * @return App\Snapshot
+     * @param Request $request
+     * @return App\Booty
      */
-    public static function order( $provider, $region, $size, $type, $app, $sourceCode, $branch, $commitId, $orderId = 0, $orderer = null, $sshkey = '60344')
+    public static function order(Request $request)
     {
+        $provider = empty($request->input('provider')) ? env('DEFAULT_INFRA_PROVIDER', 'DO') : $request->input('provider');
+
         $cloudProvider = self::getCloudProvider($provider);
 
         $booty = new Booty([
-            'order_id' => $orderId,
-            'owner_email' =>  $orderer,
+            'order_id' => empty($request->input('order_id')) ? 0 : $request->input('order_id'),
+            'owner_email' =>  empty($request->input('orderer')) ? auth()->user()->email : $request->input('orderer'),
             'status' => 'Initiated',
             'provider' =>  $provider,
-            'size' => $size,
-            'region' => $region,
-            'type' => $type,
+            'size' => empty($request->input('size')) ? env('DEFAULT_INFRA_SIZE', 's-1vcpu-1gb') : $request->input('size'),
+            'region' => empty($request->input('region')) ? env('DEFAULT_INFRA_REGION', 'sgp1') : $request->input('region'),
+            'type' => empty($request->input('type')) ? env('DEFAULT_INFRA_OS_TYPE', 'ubuntu-18-04-x64') : $request->input('type'),
             'backup' => false,
             'monitoring' => false,
-            'sshkey' => $sshkey,
-            'app' => $app,
-            'source_code' => $sourceCode,
-            'branch' => $branch,
-            'commit' => $commitId,
+            'sshkey' => empty($request->input('sshkey')) ? env('DEFAULT_INFRA_SSH_KEY', '60344') : $request->input('sshkey'),
+            'app' => $request->input('app'),
+            'source_code' => $request->input('source_code'),
+            'branch' => empty($request->input('branch')) ? 'master' : $request->input('branch'),
+            'commit' => empty($request->input('commit_id')) ? 'latest' : $request->input('commit_id'),
             'env' => env('APP_ENV')
         ]);
 

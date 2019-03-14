@@ -23,15 +23,14 @@ Route::post('/provision', 'BootyController@provision')->name('snapshots.provisio
 // assign a domain to a Live booty
 Route::post('booties/{booty_id}/domain', 'BootyController@setDomain')->name('booties.domain.create');
 
+// delete the vm behind a booty
+Route::delete('/delete/booty', 'BootyController@deleteBooty')->name('delete.booty');
 
-// all deletion related routes
-Route::delete('delete/booty', 'BootyController@deleteBooty')->name('delete.booty');
-Route::delete('delete/snapshot', 'BootyController@deleteSnapshot')->name('delete.snapshot');
-// Route::delete('snapshots/delete/all', 'BootyController@deleteAll')->name('snapshots.delete');
+// delete the image behind a snapshot
+Route::delete('/delete/snapshot', 'BootyController@deleteSnapshot')->name('delete.snapshot');
 
-
-// triggers the whole process of refreshing snapshots - which include building image, taking snapshot and deleting the image
-Route::post('snapshots/refresh', 'BootyController@refresh')->name('snapshots.refresh');
+// triggers the whole process of refreshing snapshot
+Route::post('/refresh', 'BootyController@rebuild')->name('refresh');
 
 
 

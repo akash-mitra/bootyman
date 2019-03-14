@@ -17,8 +17,8 @@
                     <tr>
                         <th scope="col">#</th>
                         <th scope="col">Name</th>
+                        <th scope="col">Application</th>
                         <th scope="col">Booties</th>
-                        <th scope="col">Repository</th>
                         <th scope="col">Snapshot ID</th>
                         <th scope="col">Status</th>
                         <th scope="col">Created</th>
@@ -28,21 +28,19 @@
                 <tbody>
                     @foreach($snapshots as $s)
                     <tr>
-                        <th scope="row">{{ $loop->iteration }}</th>
-                        <td style="vertical-align: middle;">
+                        <th scope="row" style=" vertical-align: middle;">
+                            <a href="{{ route('snapshots.snapshot', $s->id) }}">{{ str_pad($s->id, 8, '0', STR_PAD_LEFT) }}</a>
+                        </th>
+                        <td style=" vertical-align: middle;">
                             {{ substr($s->name, 0, 8) }}
                             <span class="text-secondary">{{ substr($s->name, 8, 10) }}</span>
                             {{ substr($s->name, 18) }}
                         </td>
+                        <td style=" vertical-align: middle;">
+                            <a href="{{ $s->origin->source_code }}">{{ $s->app }}</a>
+                        </td>
                         <td style="vertical-align: middle;">
                             <a href="{{ route('snapshots.snapshot', $s->id) }}">{{ count($s->booties) }}</a>
-                        </td>
-                        <td style=" vertical-align: middle;">
-                                <a href="{{ $s->source_code }}">
-                                    {{ explode("/", $s->source_code)[count(explode("/", $s->source_code)) - 1] }}
-                                </a>
-                                &nbsp; &mdash; &nbsp;
-                                <code>{{ $s->branch }}/{{ $s->commit_id }}</code>
                         </td>
                         <td style="vertical-align: middle;">{{ $s->internal_snapshot_id }}</td>
                         <td style="vertical-align: middle;">

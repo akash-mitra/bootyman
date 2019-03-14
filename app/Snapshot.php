@@ -3,8 +3,9 @@
 namespace App;
 
 use App\Booty;
-
+use Illuminate\Http\Request;
 use App\Jobs\confirmVMStatus;
+use App\Jobs\orderVMDelete;
 use App\Jobs\orderVMProvision;
 use App\Jobs\orderSnapshotCreate;
 use App\Jobs\orderSnapshotDelete;
@@ -28,23 +29,54 @@ class Snapshot extends Model
         return $this->belongsTo(Booty::class, 'booty_id', 'id');
     }
 
+
+    public static function rebuild(Request $request)
+    {
+        $booty = Booty::order($request);
+
+        $cloudProvider = self::getCloudProvider( $booty->provider);
+
+        $snapshot = new Snapshot([
+            'name' => now()->format('Ymdhi') . '-',
+            'app' => $request->input('app'),
+            'provider' => $booty->provider,
+            'booty_id' => $booty->id,
+            'internal_snapshot_id' => null,
+            'status' => 'Initiated',
+            'env' => env('APP_ENV'),
+            'order_id' => $booty->order_id,
+            'owner_email' => $booty->owner_email
+        ]);
+
+        $snapshot->save();
+
+        orderSnapshotCreate::dispatch($cloudProvider, $snapshot)->onConnection('booty-assembly-line')
+            ->delay(now()->addMinutes(16));
+        confirmSnapshotStatus::dispatch($cloudProvider, $snapshot)->onConnection('booty-assembly-line')
+            ->delay(now()->addMinutes(19));
+        orderVMDelete::dispatch($cloudProvider, $booty->internal_machine_id)->onConnection('booty-assembly-line')
+            ->delay(now()->addMinutes(30));
+
+        return $snapshot;
+
+    }
     
 
     /**
      * Orders the creation of a new snapshot from the booty id provided.
      *
-     * @param String $bootyId
-     * @param String $provider
-     * @return void
+     * @param Request $request
+     * @return App\Snapshot
      */
-    public static function order (String $bootyId, String $provider, String $orderId, String $orderer)
+    public static function order (Request $request)
     {
-        $booty = Booty::findOrFail($bootyId);
+        $booty = Booty::findOrFail( $request->input('booty_id') );
 
         if ($booty->status != 'Live' && $booty->status != 'Booty down') {
-            throw new \Exception('Can not create snapshot if source booty is not in Live or Booty down state');
+            throw new \Exception('Can not create snapshot if source booty is not in "Live" or "Booty down" state');
         }
-
+        
+        $provider = empty($request->input('provider')) ? env('DEFAULT_INFRA_PROVIDER', 'DO') : $request->input('provider');
         $cloudProvider = self::getCloudProvider($provider);
 
         $snapshot = new Snapshot([
@@ -55,8 +87,8 @@ class Snapshot extends Model
             'internal_snapshot_id' => null,
             'status' => 'Initiated',
             'env' => env('APP_ENV'),
-            'order_id' => $orderId,
-            'owner_email' => $orderer
+            'order_id' => empty($request->input('order_id')) ? 0 : $request->input('order_id'),
+            'owner_email' => empty($request->input('orderer')) ? auth()->user()->email : $request->input('orderer')
         ]);
 
         $snapshot->save();
@@ -85,6 +117,13 @@ class Snapshot extends Model
     }
 
 
+    /**
+     * Provisions a new VM from this snapshot
+     *
+     * @param String $orderId
+     * @param String $orderer
+     * @return void
+     */
     public function provision (String $orderId, String $orderer)
     {
         $cloudProvider = self::getCloudProvider($this->provider);
@@ -110,66 +149,66 @@ class Snapshot extends Model
 
         $booty->save();
 
-        orderVMProvision::dispatch($cloudProvider, $booty)->onConnection('booty-assembly-line');
-        confirmVMStatus::dispatch($cloudProvider, $booty)->onConnection('booty-assembly-line')
+        orderVMProvision::dispatch($cloudProvider, $booty)->onConnection('booty-provision-line');
+        confirmVMStatus::dispatch($cloudProvider, $booty)->onConnection('booty-provision-line')
             ->delay(now()->addSeconds(90));
-        confirmVMStatus::dispatch($cloudProvider, $booty)->onConnection('booty-assembly-line')
+        confirmVMStatus::dispatch($cloudProvider, $booty)->onConnection('booty-provision-line')
             ->delay(now()->addSeconds(180));
 
         return $booty;
     }
 
 
-    /**
-     * Orders the cloud service provider to build a new snapshot 
-     * using the latest code and then configure the application.
-     *
-     * @param String $sourceCode
-     * @param String $commitId
-     * @param String $branch
-     * @param String $type
-     * @param String $provider
-     * @return App\Snapshot
-     */
-    public static function orderRefresh($sourceCode, $commitId, $branch, $type, $provider = 'DO')
-    {
-        $cloudProvider = self::getCloudProvider($provider);
-
-        $image = new Snapshot([
-            'name' => 'image-' . $commitId,
-            'provider' => $provider,
-            'resource_id' => null,
-            'source_code' => $sourceCode,
-            'branch' => $branch,
-            'commit_id' => $commitId,
-            'type' => $type,
-            'env' => env('APP_ENV'),
-            'status' => 'Initiated Image'
-        ]);
-
-        $image->save();
-
-        orderImageCreate::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line');
-        checkImageStatus::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line')
-            ->delay(now()->addMinutes(12));
-        orderSnapshotCreate::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line')
-            ->delay(now()->addMinutes(15));
-        checkSnapshotStatus::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line')
-            ->delay(now()->addMinutes(20));
-        orderImageDeletion::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line')
-            ->delay(now()->addMinutes(20));
-
-        return $image;
-    }
-
-
-
-    // public static function orderImageDelete (Snapshot $image)
+    // /**
+    //  * Orders the cloud service provider to build a new snapshot 
+    //  * using the latest code and then configure the application.
+    //  *
+    //  * @param String $sourceCode
+    //  * @param String $commitId
+    //  * @param String $branch
+    //  * @param String $type
+    //  * @param String $provider
+    //  * @return App\Snapshot
+    //  */
+    // public static function orderRefresh($sourceCode, $commitId, $branch, $type, $provider = 'DO')
     // {
-    //     $cloudProvider = self::getCloudProvider($image->provider);
-    //     orderImageDeletion::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line');
+    //     $cloudProvider = self::getCloudProvider($provider);
+
+    //     $image = new Snapshot([
+    //         'name' => 'image-' . $commitId,
+    //         'provider' => $provider,
+    //         'resource_id' => null,
+    //         'source_code' => $sourceCode,
+    //         'branch' => $branch,
+    //         'commit_id' => $commitId,
+    //         'type' => $type,
+    //         'env' => env('APP_ENV'),
+    //         'status' => 'Initiated Image'
+    //     ]);
+
+    //     $image->save();
+
+    //     orderImageCreate::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line');
+    //     checkImageStatus::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line')
+    //         ->delay(now()->addMinutes(12));
+    //     orderSnapshotCreate::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line')
+    //         ->delay(now()->addMinutes(15));
+    //     checkSnapshotStatus::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line')
+    //         ->delay(now()->addMinutes(20));
+    //     orderImageDeletion::dispatch($cloudProvider, $image)->onConnection('snapshot-assembly-line')
+    //         ->delay(now()->addMinutes(20));
+
+    //     return $image;
     // }
 
+
+
+    /**
+     * Deletes the underlying image corresponding to this snapshot 
+     * and updates the status of the snapshot as deleted.
+     *
+     * @return void
+     */
     public function terminate()
     {
         $cloudProvider = self::getCloudProvider($this->provider);

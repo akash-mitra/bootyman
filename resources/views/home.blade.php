@@ -10,33 +10,50 @@
             </div>
             @endif
 
+            
 
-            <h3>1. Get Latest Snapshot Info</h3>
-            <p>To get the info about the latest snapshot, use the <code>/snapshots/latest</code> endpoint.</p>
-            <h4>Request</h4>
-            <pre>
-    curl --request GET \
-    --url https://bootyman.app/api/snapshots/latest \
-    --header 'authorization: Bearer xxxxyyyyzzzz'
-</pre>
-            <h4>Response</h4>
-            <pre>
-{
-  "id": 20,
-  "name": "20190311D135908414N20",
-  "provider": "DO",
-  "resource_id": "0",
-  "internal_snapshot_id": "44578145",
-  "source_code": "https:\/\/github.com\/akash-mitra\/blogtheory.git",
-  "branch": "master",
-  "commit_id": "1377af6",
-  "type": "ubuntu-18-04-x64",
-  "status": "Snapshot Ready",
-  "env": "local",
-  "created_at": "2019-03-11 11:36:08",
-  "updated_at": "2019-03-11 11:56:16"
-}
-</pre>
+            <div class="card-deck mb-3 text-center">
+                <div class="card mb-4 box-shadow">
+                    <div class="card-header">
+                        <h4 class="my-0 font-weight-normal">VM</h4>
+                    </div>
+                    <div class="card-body">
+                        <h1 class="card-title pricing-card-title">{{ $booties }} <small class="text-muted">Booties</small></h1>
+                        <p>Total deployed VMs</p>
+
+                    </div>
+                </div>
+                <div class="card mb-4 box-shadow">
+                    <div class="card-header">
+                        <h4 class="my-0 font-weight-normal">Images</h4>
+                    </div>
+                    <div class="card-body">
+                        <h1 class="card-title pricing-card-title">{{ $snapshots }} <small class="text-muted">Snapshots</small></h1>
+                        <p>Total image snapshots available on cloud</p>
+
+                    </div>
+                </div>
+                <div class="card mb-4 box-shadow">
+                    <div class="card-header">
+                        <h4 class="my-0 font-weight-normal">Errors</h4>
+                    </div>
+                    <div class="card-body">
+                        <h1 class="card-title pricing-card-title">0 <small class="text-muted">errors</small></h1>
+                        <p>No. of uncleared errors</p>
+
+                    </div>
+                </div>
+                <div class="card mb-4 box-shadow">
+                    <div class="card-header">
+                        <h4 class="my-0 font-weight-normal">Tokens</h4>
+                    </div>
+                    <div class="card-body">
+                        <h1 class="card-title pricing-card-title">{{ $tokens}} <small class="text-muted">tokens</small></h1>
+                        <p>Passport access tokens issued</p>
+
+                    </div>
+                </div>
+            </div>
 
         </div>
     </div>

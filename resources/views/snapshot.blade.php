@@ -15,9 +15,7 @@
             </h4>
             <h3 class="py-2">
                 <div>
-                    <span>{{ substr($snapshot->name, 0, 8) }}</span>
-                    <span class="text-secondary">{{ substr($snapshot->name, 8, 10) }}</span>
-                    {{ substr($snapshot->name, 18) }}
+                    {{ substr($snapshot->name, 0, 8) }}<span class="text-secondary">{{ substr($snapshot->name, 8, 4) }}</span>{{ substr($snapshot->name, 12) }}
                     @if($snapshot->status === 'Snapshot Ready')
                     <span class="text-right pull-right border border-success px-2 rounded text-success">{{ $snapshot->status }}</span>
                     @else
@@ -30,15 +28,19 @@
                 <tbody>
                     <tr>
                         <td class="px-1"><span class="text-secondary">Repository:</span></td>
-                        <td class="px-4"><code>{{ $snapshot->source_code }}</code></td>
+                        <td class="px-4"><code>{{ $snapshot->origin->source_code }}</code></td>
                     </tr>
                     <tr>
                         <td class="px-1"><span class="text-secondary">Branch:</span></td>
-                        <td class="px-4"><code>{{ $snapshot->branch }}</code></td>
+                        <td class="px-4"><code>{{ $snapshot->origin->branch }}</code></td>
                     </tr>
                     <tr>
                         <td class="px-1"><span class="text-secondary">Commit:</span></td>
-                        <td class="px-4"><code>{{ $snapshot->commit_id }}</code></td>
+                        <td class="px-4"><code>{{ $snapshot->origin->commit }}</code></td>
+                    </tr>
+                    <tr>
+                        <td class="px-1"><span class="text-secondary">Order:</span></td>
+                        <td class="px-4"><code>Order ID: {{ $snapshot->order_id }} From {{ $snapshot->owner_email }}</code></td>
                     </tr>
                     <tr>
                         <td class="px-1"><span class="text-secondary">Last Updated:</span></td>
@@ -63,7 +65,7 @@
                 <tbody>
                     @foreach($snapshot->booties as $b)
                     <tr>
-                        <th scope="row">{{ $loop->iteration }}</th>
+                        <th scope="row">{{ $b->id }}</th>
                         <td style="vertical-align: middle;">
                             {{ substr($b->order_id, 0, 8) }}
                         </td>

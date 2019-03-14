@@ -24,7 +24,13 @@ class HomeController extends Controller
      */
     public function index()
     {
-        return view('home');
+        $booties = Booty::count();
+        $snapshots = Snapshot::count();
+        $tokens = \DB::table( 'oauth_access_tokens')->where('revoked', 0)->count();
+        return view('home')
+        ->with('booties', $booties)
+        ->with('snapshots', $snapshots)
+        ->with('tokens', $tokens);
     }
 
     public function snapshots()
@@ -65,7 +71,7 @@ class HomeController extends Controller
 
     public function docs()
     {
-        return view('home');
+        return view('docs');
     }
 
 
