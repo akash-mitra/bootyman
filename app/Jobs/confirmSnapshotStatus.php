@@ -2,9 +2,9 @@
 
 namespace App\Jobs;
 
-class orderSnapshotCreate extends BaseJob
+class confirmSnapshotStatus extends BaseJob
 {
-   
+    
     /**
      * Execute the job.
      *
@@ -12,7 +12,7 @@ class orderSnapshotCreate extends BaseJob
      */
     public function handle()
     {
-        $this->cloudProvider->createSnapshot ($this->resource);
-        
+        $this->cloudProvider->confirmSnapshot($this->resource);
     }
+
 }

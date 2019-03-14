@@ -11,34 +11,28 @@
 |
 */
 
+// create a new virtual machine from the source control code
+Route::post('/create/booty', 'BootyController@createBooty')->name('booties.create');
 
-/*
-|--------------------------------------------------------------------------
-| Snapshot Related Routes
-|--------------------------------------------------------------------------
-*/
+// create a snapshot from the booty provided
+Route::post('/create/snapshot', 'BootyController@createSnapshot')->name('snapshots.create');
 
-// create a new image from the source control code
-Route::post('snapshots/create/image', 'SnapshotController@createImage')->name('snapshots.create.image');
+// provision a new machine from the latest snapshot of the application
+Route::post('/provision', 'BootyController@provision')->name('snapshots.provision');
 
-// create a new snapshot from an existing image
-Route::post('snapshots/create/snapshot', 'SnapshotController@createSnapshot')->name('snapshots.create.snapshot');
+// assign a domain to a Live booty
+Route::post('booties/{booty_id}/domain', 'BootyController@setDomain')->name('booties.domain.create');
 
-// triggers the whole process of refreshing snapshots - which include building image, taking snapshot and deleting the image
-Route::post('snapshots/refresh', 'SnapshotController@refresh')->name('snapshots.refresh');
 
 // all deletion related routes
-Route::delete('snapshots/delete/image', 'SnapshotController@deleteImage')->name('snapshots.delete.image');
-Route::delete('snapshots/delete/snapshot', 'SnapshotController@deleteSnapshot')->name('snapshots.delete.snapshot');
-Route::delete('snapshots/delete/all', 'SnapshotController@deleteAll')->name('snapshots.delete');
-
-// retrieves the id of the latest snapshot
-Route::get('snapshots/latest', 'SnapshotController@latest')->name('snapshots.latest');
+Route::delete('delete/booty', 'BootyController@deleteBooty')->name('delete.booty');
+Route::delete('delete/snapshot', 'BootyController@deleteSnapshot')->name('delete.snapshot');
+// Route::delete('snapshots/delete/all', 'BootyController@deleteAll')->name('snapshots.delete');
 
 
-/*
-|--------------------------------------------------------------------------
-| Booty Related Routes
-|--------------------------------------------------------------------------
-*/
-Route::post('booties/provision', 'BootyController@provision')->name('booties.provision');
+// triggers the whole process of refreshing snapshots - which include building image, taking snapshot and deleting the image
+Route::post('snapshots/refresh', 'BootyController@refresh')->name('snapshots.refresh');
+
+
+
+

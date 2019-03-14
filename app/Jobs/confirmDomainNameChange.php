@@ -10,10 +10,11 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 
-class orderBootyProvision implements ShouldQueue
+class confirmDomainNameChange implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
     private $booty;
+    private $domainName;
     private $cloudProvider;
 
     // The --timeout value should always be at least 
@@ -30,9 +31,10 @@ class orderBootyProvision implements ShouldQueue
      * 
      * @return void
      */
-    public function __construct($cloudProvider, Booty $booty)
+    public function __construct($cloudProvider, Booty $booty, String $domainName)
     {
         $this->cloudProvider = $cloudProvider;
+        $this->domainName = $domainName;
         $this->booty = $booty;
     }
 
@@ -43,7 +45,7 @@ class orderBootyProvision implements ShouldQueue
      */
     public function handle()
     {
-        $this->cloudProvider->createBooty($this->booty);
+        $this->cloudProvider->confirmDomainName($this->booty, $this->domainName);
     }
 
 
@@ -56,7 +58,7 @@ class orderBootyProvision implements ShouldQueue
     public function failed(\Exception $exception)
     {
         \Log::warn($exception->getMessage());
-        $this->booty->status = 'orderBootyProvision Failed';
+        $this->booty->name = 'orderDomainNameChange Failed';
         $this->booty->save();
     }
 }

@@ -40,7 +40,7 @@
 
                         @else
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('home') }}">{{ __('Home') }}</a>
+                            <a class="nav-link" href="{{ route('home') }}">{{ __('Dashboard') }}</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('snapshots') }}">{{ __('Snapshots') }}</a>
@@ -49,10 +49,14 @@
                             <a class="nav-link" href="{{ route('booties') }}">{{ __('Booties') }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('cloud') }}">{{ __('Cloud') }}</a>
+                            <a class="nav-link" href="{{ route('cloud') }}">{{ __('Cloud Inventory') }}</a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('errors') }}">{{ __('Errors') }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('token') }}">{{ __('Token') }}</a>
+                            <a class="nav-link" href="{{ route('docs') }}">{{ __('Docs') }}</a>
                         </li>
                         @endguest
 
@@ -77,11 +81,16 @@
                             </a>
 
                             <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+
+                                <a class="dropdown-item" href="{{ route('token') }}">
+                                    {{ __('Tokens') }}
+                                </a>
+
                                 <a class="dropdown-item" href="{{ route('password.show') }}">
                                     {{ __('Change Password') }}
                                 </a>
                                 <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault();
-                                                     document.getElementById('logout-form').submit();">
+                                                        document.getElementById('logout-form').submit();">
                                     {{ __('Logout') }}
                                 </a>
 

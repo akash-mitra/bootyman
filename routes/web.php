@@ -20,6 +20,8 @@ Route::get('/snapshots/{snapshot_id}', 'HomeController@snapshot')->name('snapsho
 Route::get('/booties', 'HomeController@booties')->name('booties')->middleware('auth');
 Route::get('/cloud', 'HomeController@cloud')->name('cloud')->middleware('auth');
 Route::get('/token', 'HomeController@token')->name('token')->middleware('auth');
+Route::get('/errors', 'HomeController@errors')->name('errors')->middleware('auth');
+Route::get('/docs', 'HomeController@docs')->name('docs')->middleware('auth');
 
 
 Route::get('/password', 'HomeController@passwordShow')->name('password.show')->middleware('auth');

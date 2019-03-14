@@ -9,6 +9,7 @@
                 {{ session('status') }}
             </div>
             @endif
+            
             <passport-personal-access-tokens></passport-personal-access-tokens>
 
         </div>

@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Snapshot;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
@@ -10,41 +9,32 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 
-class orderImageCreate implements ShouldQueue
+use Illuminate\Database\Eloquent\Model;
+
+class BaseJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    private $image;
-    private $cloudProvider;
     
+    protected $resource;
+    protected $cloudProvider;
     // The --timeout value should always be at least 
     // several seconds shorter than your 
     // retry_after configuration value.
-    // we set this to 9 min as retry after is set to 10 min
-    public $timeout = 540;
-
+    protected $timeout;
     // The number of times the job may be attempted.
-    public $tries = 2;
+    protected $tries;
 
     /**
      * Create a new job instance.
      * 
      * @return void
      */
-    public function __construct($cloudProvider, Snapshot $image )
+    public function __construct($cloudProvider, $resource, int $timeout = 570, int $tries = 3)
     {
         $this->cloudProvider = $cloudProvider;
-        $this->image = $image;
-    }
-
-    /**
-     * Execute the job.
-     *
-     * @return void
-     */
-    public function handle()
-    {
-        $this->cloudProvider->createImage($this->image);
-        
+        $this->resource = $resource;
+        $this->timeout = $timeout;
+        $this->tries = $tries;
     }
 
 
@@ -57,7 +47,7 @@ class orderImageCreate implements ShouldQueue
     public function failed(\Exception $exception)
     {
         \Log::warn($exception->getMessage());
-        $this->image->status = 'orderImageCreate Failed';
-        $this->image->save();
+        $this->resource->status = get_called_class().' Failed';
+        $this->resource->save();
     }
 }

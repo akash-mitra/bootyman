@@ -66,7 +66,7 @@ return [
             'block_for' => null,
         ],
 
-        'snapshot-assembly-line' => [
+        'booty-assembly-line' => [
             'driver' => 'redis',
             'connection' => 'default',
             'queue' => 'default',
@@ -74,7 +74,7 @@ return [
             'block_for' => 5,
         ],
 
-        'booty-assembly-line' => [
+        'booty-provision-line' => [
             'driver' => 'redis',
             'connection' => 'default',
             'queue' => 'default',

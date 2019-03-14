@@ -18,30 +18,37 @@ class DigitalOceanService
     }
 
 
-    public function createImage (Snapshot $image) 
+    /**
+     * This creates a fresh new virtual machine and installs the application
+     * code in that new machine.
+     *
+     * @param Booty $booty
+     * @return void
+     */
+    public function createVM (Booty $booty) 
     {    
         $cloudInitCommand = '#!/bin/bash'
                             . "\n"
                             . 'curl --output /root/b.sh https://raw.githubusercontent.com/akash-mitra/booty/master/booty.sh'
                             . "\n"
-                            . 'bash /root/b.sh ' . $image->source_code;
+                            . 'bash /root/b.sh ' . $booty->source_code;
         
         $droplet = DigitalOcean::droplet()->create(
-            $image->commit_id,    // name
-            $this->defaultRegion, // region 
-            $this->defaultSize,   // size - minimum size
-            $image->type,         // image - public image slug
-            false,                // backup
+            empty($booty->name)? 'domain-unassigned' : $booty->name, // name
+            $booty->region,       // region 
+            $booty->size,         // size - minimum size
+            $booty->type,         // image - public image slug
+            $booty->backup,       // backup
             false,                // ipv6
             false,                // private networking
-            [60344],              // ssh keys
+            [$booty->sshkey],     // ssh keys
             $cloudInitCommand,    // user data
-            false                 // monitoring
+            $booty->monitoring    // monitoring
         );
 
-        $image['resource_id'] = $droplet->id;
-        $image->status = 'Image build requested';
-        $image->save();
+        $booty[ 'internal_machine_id' ] = $droplet->id;
+        $booty->status = 'Building new booty';
+        $booty->save();
     }
 
     /**
@@ -51,92 +58,132 @@ class DigitalOceanService
      * @param App\Snapshot $image
      * @return void
      */
-    public function createSnapshot(Snapshot $image)
+    public function createSnapshot(Snapshot $snapshot)
     {
-        $snapshotName = now()->format('Ymd') . 'D' . $image->resource_id . 'N' . $image->id;
-        DigitalOcean::droplet()->snapshot($image->resource_id, $snapshotName);
-        $image->status = 'Snapshot build requested';
-        $image->name = $snapshotName;
-        $image->save();
+        $booty_id = $snapshot->origin->internal_machine_id;
+        $snapshotName = $snapshot->name . $snapshot->id;
+        DigitalOcean::droplet()->snapshot($booty_id, $snapshotName);
+        $snapshot->status = 'Building new snapshot';
+        $snapshot->name = $snapshotName;
+        $snapshot->save();
     }
 
 
-    public function deleteImage(Snapshot $image)
+    /**
+     * Deletes the specified virtual machine
+     *
+     * @param String $internal_machine_id
+     * @return void
+     */
+    public function deleteVM(String $internal_machine_id)
     {
-        DigitalOcean::droplet()->delete($image->resource_id);
-        $image->resource_id = 0;
-        $image->save();
+        DigitalOcean::droplet()->delete($internal_machine_id);
     }
 
 
-    public function deleteSnapshot(Snapshot $image)
+    
+    /**
+     * Deletes the specified image snapshot
+     *
+     * @param String $internal_snapshot_id
+     * @return void
+     */
+    public function deleteSnapshot(String $internal_snapshot_id)
     {
-        $snapshots = DigitalOcean::image()->getAll(['private' => true]);
-        $status = $image->status;
-        foreach($snapshots as $snapshot) {
-            if ($snapshot->name === $image->name) {
-                DigitalOcean::image()->delete($snapshot->id);
-                $status = 'Snapshot Deletion Requested';
-                break;
-            }
-        }
-        $image->status = $status;
-        $image->save();
-
+        DigitalOcean::image()->delete($internal_snapshot_id);
     }
 
 
-    public function checkImageIsPresent(Snapshot $image)
+
+    // public function deleteSnapshot(Snapshot $image)
+    // {
+    //     $snapshots = DigitalOcean::image()->getAll(['private' => true]);
+    //     $status = $image->status;
+    //     foreach($snapshots as $snapshot) {
+    //         if ($snapshot->name === $image->name) {
+    //             DigitalOcean::image()->delete($snapshot->id);
+    //             $status = 'Snapshot Deletion Requested';
+    //             break;
+    //         }
+    //     }
+    //     $image->status = $status;
+    //     $image->save();
+
+    // }
+
+
+    /**
+     * Given a booty, it checks if the booty actually exists in
+     * the digitalocean's repository and reaffirms/writes back
+     * the status of the machine.
+     *
+     * @param Booty $booty
+     * @return void
+     */
+    public function confirmVM (Booty $booty)
     {
-        $status = 'Image Ready';
+        $status = 'Live';
         try {
-            $droplet = DigitalOcean::droplet()->getById($image->resource_id);
+            $droplet = DigitalOcean::droplet()->getById($booty->internal_machine_id);
+            $booty->ip = $droplet->networks[0]->ipAddress;
+            
         } catch(\Exception $e) {
-            $status = 'Image missing';
+            $status = 'Booty missing';
         }
 
-        $image->status = $status;
-        $image->save();
+        $booty->status = $status;
+        $booty->save();
     }
 
 
 
-    public function checkSnapshotIsPresent(Snapshot $image)
+    /**
+     * Given a snapshot, this checks in the digitalocean's repo
+     * if that snapshot really exists as an image there and
+     * writes back the status in the snapshot table.
+     *
+     * @param Snapshot $snapshot
+     * @return void
+     */
+    public function confirmSnapshot (Snapshot $snapshot)
     {
-        $snapshots = DigitalOcean::image()->getAll(['private' => true]);
-        foreach($snapshots as $snapshot) {
-            if ($snapshot->name === $image->name) 
+        $privateImages = DigitalOcean::image()->getAll(['private' => true]);
+
+        foreach($privateImages as $image) {
+            if ($image->name === $snapshot->name) 
             {
-                $image->status = 'Snapshot Ready';
-                $image->internal_snapshot_id = $snapshot->id;
-                return $image->save();
+                $snapshot->status = 'Snapshot Ready';
+                $snapshot->internal_snapshot_id = $image->id;
+                return $snapshot->save();
             }
         }
+
+        $snapshot->status = 'Snapshot Not Found';
+        $snapshot->internal_snapshot_id = null;
+        return $snapshot->save();
     }
     
 
 
-    public function createBooty (Booty $booty) 
+    public function provisionVM (Booty $booty) 
     {
-        $internalSnapshotId = Snapshot::latestReady()->internal_snapshot_id;
-
         $cloudInitCommand = '';
 
         $droplet = DigitalOcean::droplet()->create(
             $booty->order_id,     // name
             $booty->region,       // region 
             $booty->size,         // size - minimum size
-            $internalSnapshotId,  // image - public image slug
+            $booty->origin->internal_snapshot_id,  // image - public image slug
             $booty->backup,       // backup
             false,                // ipv6
             false,                // private networking
-            [60344],              // ssh keys
+            [$booty->sshkey],     // ssh keys
             $cloudInitCommand,    // user data
             $booty->monitoring    // monitoring
         );
 
         $booty[ 'internal_machine_id' ] = $droplet->id;
-        $booty->status = 'Provisioning In-progress';
+        
         $booty->save();
     }
 
@@ -153,6 +200,41 @@ class DigitalOceanService
         }
 
         $booty->status = $status;
+        $booty->save();
+    }
+
+
+    public function changeDomainName(Booty $booty, String $domainName)
+    {
+        try {
+            DigitalOcean::domain()->create($domainName, $booty->ip);
+            $booty->name = 'Updating...';
+            $booty->save();
+
+        } catch (\Exception $exception) {
+            \Log::warn( 'Failed to assign domain [' . $domainName . '] to booty [' . $booty->id . ']');
+            \Log::warn($exception->getMessage());
+        }
+    }
+
+
+    public function confirmDomainName(Booty $booty, String $domainName)
+    {
+        
+        try {
+            $domainObject = DigitalOcean::domain()->getByName($domainName);
+            if (strpos( $domainObject->zoneFile, 'IN A ' . $booty->ip) !== false) {
+                $booty->name = $domainName;
+            }
+            else {
+                throw new \Exception('Domian [' . $domainName . '] is not associated to IP of the booty');
+            }
+        } catch (\Exception $exception) {
+            \Log::warn('Failed to assign domain [' . $domainName . '] to booty [' . $booty->id . ']');
+            \Log::warn($exception->getMessage());
+            $booty->name = 'Error!';
+        }
+
         $booty->save();
     }
 

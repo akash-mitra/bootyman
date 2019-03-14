@@ -16,15 +16,14 @@ class CreateSnapshotsTable extends Migration
         Schema::create('snapshots', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name', 30);
+            $table->string('app');
             $table->string('provider', 10);
-            $table->string('resource_id')->nullable();
+            $table->string('booty_id')->nullable();
             $table->string( 'internal_snapshot_id')->nullable();
-            $table->string('source_code');
-            $table->string('branch');
-            $table->string('commit_id');
-            $table->string('type')->default('do-ubuntu-18.04');
-            $table->string('status', 30);
+            $table->string('status', 100);
             $table->string('env', 10);
+            $table->string('order_id');
+            $table->string('owner_email');
             $table->timestamps();
         });
     }

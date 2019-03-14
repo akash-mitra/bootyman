@@ -57,6 +57,18 @@ class HomeController extends Controller
     }
 
 
+    public function errors()
+    {
+        return 'Up-coming feature';
+    }
+
+
+    public function docs()
+    {
+        return view('home');
+    }
+
+
     public function passwordShow()
     {
         return view('password');

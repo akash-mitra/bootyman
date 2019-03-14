@@ -2,9 +2,10 @@
 
 namespace App\Jobs;
 
-class orderSnapshotCreate extends BaseJob
+
+class confirmVMStatus extends BaseJob
 {
-   
+    
     /**
      * Execute the job.
      *
@@ -12,7 +13,8 @@ class orderSnapshotCreate extends BaseJob
      */
     public function handle()
     {
-        $this->cloudProvider->createSnapshot ($this->resource);
-        
+        $this->cloudProvider->confirmVM($this->resource);
     }
+
+
 }
