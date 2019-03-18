@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-
+use App\Error;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
@@ -48,5 +48,18 @@ class BaseJob implements ShouldQueue
         \Log::warn($exception->getMessage());
         $this->resource->status = get_called_class().' Failed';
         $this->resource->save();
+
+        $error = new Error([
+            'type' => 'error',
+            'provider' => '',
+            'region' => '',
+            'errorable_type' => 'order',
+            'errorable_id' => '',
+            'desc' => get_called_class().  '  Failed.' . $exception->getMessage(),
+            'status' => 'unresolved',
+            'token' => ''
+        ]);
+
+        $error->save();
     }
 }

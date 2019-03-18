@@ -179,7 +179,11 @@ class BootyController extends Controller
             ],404);
         }
 
-        $booty = $snapshot->provision( $request->input('order_id'), $request->input('owner_email'));
+        $booty = $snapshot->provision( 
+            $request->input('order_id'), 
+            $request->input('owner_email'),
+            $request->input('services')
+        );
 
         return [
             'status' => 'in-progress',

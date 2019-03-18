@@ -34,7 +34,9 @@ class Booty extends Model
         'app',
         'source_code',
         'branch',
-        'commit'
+        'commit',
+        'env',
+        'services'
     ];
 
 
@@ -66,7 +68,17 @@ class Booty extends Model
         $this->save();
 
         return $this;
+    }
 
+
+    /**
+     * Get all the errors associated with this booty
+     *
+     * @return void
+     */
+    public function errors()
+    {
+        return $this->morphMany('App\Error', 'errorable');
     }
 
 
@@ -110,6 +122,9 @@ class Booty extends Model
         return $booty;
     }
 
+
+
+    
     public static function provision ($orderId, $ownerEmail, $name, $size, $region, $provider)
     {
         $cloudProvider = self::getCloudProvider($provider);

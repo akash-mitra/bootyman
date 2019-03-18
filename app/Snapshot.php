@@ -18,15 +18,36 @@ class Snapshot extends Model
     protected $fillable = [ 'name', 'app', 'provider', 'booty_id', 'internal_snapshot_id', 'status', 'env', 'order_id', 'owner_email'];
 
 
+    /**
+     * Returns all the booties that are created using this snapshot
+     *
+     * @return void
+     */
     public function booties()
     {
         return $this->hasMany(Booty::class);
     }
 
 
+    /**
+     * Returns the booty from which this snapshot was originally created
+     *
+     * @return void
+     */
     public function origin()
     {
         return $this->belongsTo(Booty::class, 'booty_id', 'id');
+    }
+
+
+    /**
+     * Get all the errors associated with this snapshot
+     *
+     * @return void
+     */
+    public function errors()
+    {
+        return $this->morphMany('App\Error', 'errorable');
     }
 
 
@@ -124,7 +145,7 @@ class Snapshot extends Model
      * @param String $orderer
      * @return void
      */
-    public function provision (String $orderId, String $orderer)
+    public function provision (String $orderId, String $orderer, $services = null)
     {
         $cloudProvider = self::getCloudProvider($this->provider);
 
@@ -144,7 +165,8 @@ class Snapshot extends Model
             'source_code' => $this->origin->source_code,
             'branch' => $this->origin->branch,
             'commit' => $this->origin->commit,
-            'env' => env('APP_ENV')
+            'env' => env('APP_ENV'),
+            'services' => json_encode($services)
         ]);
 
         $booty->save();

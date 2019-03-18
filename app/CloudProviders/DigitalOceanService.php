@@ -165,9 +165,18 @@ class DigitalOceanService
     
 
 
+    /**
+     * Provisions a new booty based on the latest image of the application
+     *
+     * @param Booty $booty
+     * @return void
+     */
     public function provisionVM (Booty $booty) 
     {
-        $cloudInitCommand = '';
+        $cloudInitCommand = $this->_cloudInitFor(
+            $booty->app, 
+            json_decode($booty->services, true)
+        );
 
         $droplet = DigitalOcean::droplet()->create(
             $booty->order_id,     // name
@@ -246,6 +255,38 @@ class DigitalOceanService
             "images" => DigitalOcean::image()->getAll(['private' => true])
         ];
     }   
+
+
+
+    /**
+     * Creates the cloud init script to be run on  VM provision.
+     *
+     * @param String $appName
+     * @param array $services
+     * @return String
+     */
+    private function _cloudInitFor ($appName, $services)
+    {
+
+        $commands = '#!/bin/bash'
+            . "\n"
+            . 'php '.  '/var/www/kayna/' . $appName . '/' . 'artisan key:generate '
+            . "\n";
+
+        if (array_key_exists('commands', $services)) {
+            foreach($services['commands'] as $command) {
+                $commands .= $command . '; ' . "\n";
+            }
+        }
+
+
+        if (array_key_exists('laravel-passport', $services) && $services['laravel-passport']) {
+            $commands .= 'php '. '/var/www/kayna/' . $appName . '/' . 'artisan passport:install '
+            . "\n";
+        }
+
+        return $commands;
+    }
 
     
 
