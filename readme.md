@@ -30,7 +30,7 @@ Images of your booties at any point in time can be stored as snapshots. At later
 
 ### Installation
 
-This is a complete Laravel application. Download it in your local or remote machine and then run composer install.
+This is a complete Laravel application. Install it in your local or remote machine as below,
 
 ```
 mkdir bootyman
@@ -41,18 +41,25 @@ php artisan key:generate
 cp .env.example .env
 ```
 
-Update `.env` file database connections, provide a new email for ADMIN_USER variable and then run `php artisan migrate --seed`
+Update `.env` file database connections, and update the environment variables accordingly. Here are a few variables that you may wish to update.
 
-Next run,
+* `DO_TOKEN` - (Mandatory) Token for DigitalOcean. 
+* `ADMIN_USER` - (Optional) Default admin account user email
+* `ADMIN_PASSWORD` - (Optional) Default Admin password
+* `DEFAULT_INFRA_SSH_FINGERPRINT` - (Mandatory) Master fingerprint of your cloud user key.
+
+
+After updating the variables, run -
 
 ```
+php artisan migrate --seed
 php artisan passport:install
 php artisan queue:restart
 ```
 
 ### Getting Started
 
-Unless you modify ADMIN_USER and ADMIN_PASSWORD variables in `.env` file before executing `php artisan migrate --seed`, the application will install with a default user (`admin@example.com`) and password (`secret`) in the beginning. Do not forget to change the password after logging in for the first time. After logging in, generate a new API Token for other applications to be able to connect to Bootyman and place API requests.
+Unless you modify `ADMIN_USER` and `ADMIN_PASSWORD` variables in `.env` file before executing `php artisan migrate --seed`, the application will install with a default user (`admin@example.com`) and password (`secret`) in the beginning. Do not forget to change the password after logging in for the first time. After logging in, generate a new API Token for other applications to be able to connect to Bootyman and place API requests.
 
 ### Quick API Reference
 
@@ -121,5 +128,5 @@ In the above request, a `services` parameter is also passed. This parameter is o
 
 ##### Commands
 
-Under the `commands` array, you can provide number of `shell` commands that you wish to execute once the booty in provisioned (these are passed via `cloudinit` parameter). These commands are executed with `appuser` privilege.
+Under the `commands` array, you can provide number of `shell` commands that you wish to execute once the booty is provisioned (these are passed via `cloudinit` parameter). These commands are executed with `appuser` privilege.
 

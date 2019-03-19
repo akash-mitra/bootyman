@@ -105,7 +105,7 @@ class Booty extends Model
             'type' => empty($request->input('type')) ? env('DEFAULT_INFRA_OS_TYPE', 'ubuntu-18-04-x64') : $request->input('type'),
             'backup' => false,
             'monitoring' => false,
-            'sshkey' => empty($request->input('sshkey')) ? env('DEFAULT_INFRA_SSH_KEY', '60344') : $request->input('sshkey'),
+            'sshkey' => empty($request->input('sshkey')) ? env('DEFAULT_INFRA_SSH_FINGERPRINT', '60344') : $request->input('sshkey'),
             'app' => $request->input('app'),
             'source_code' => $request->input('source_code'),
             'branch' => empty($request->input('branch')) ? 'master' : $request->input('branch'),
