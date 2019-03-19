@@ -2,6 +2,7 @@
         
 Bootyman helps you to deploy and manage applications or services in self contained virtual machines in cloud environment.
 These machines can be deployed in real-time using the latest codes from source control systems and updated or managed as and when needed using a seamless API interface.
+
 The API interface makes it easy for other systems to interact with bootyman on-the-fly and provision cloud based systems on demand. 
 Bootyman also provides a simple admin interface for the front-end users to monitor and manage the systems in real-time.
 While Bootyman makes it easy to perform user authentication via traditional login, it also provides Oauth token based APIs to automate machine to machine accesses.
@@ -42,7 +43,7 @@ cp .env.example .env
 
 Update `.env` file database connections, provide a new email for ADMIN_USER variable and then run `php artisan migrate --seed`
 
-Next run
+Next run,
 
 ```
 php artisan passport:install
@@ -51,22 +52,69 @@ php artisan queue:restart
 
 ### Getting Started
 
-Unless you modify ADMIN_USER and ADMIN_PASSWORD variables in `.env` file before executing `php artisan migrate --seed`, the application will install with a default user (admin@example.com) and password (secret) in the beginning. Do not forget to change the password after logging in for the first time. Generate a new Token for other applications to be able to connect to Bootyman and place API requests.
+Unless you modify ADMIN_USER and ADMIN_PASSWORD variables in `.env` file before executing `php artisan migrate --seed`, the application will install with a default user (`admin@example.com`) and password (`secret`) in the beginning. Do not forget to change the password after logging in for the first time. After logging in, generate a new API Token for other applications to be able to connect to Bootyman and place API requests.
 
 ### Quick API Reference
 
 #### Create a new Booty
-To create a new VM pre-configured with a Laravel application from Github, use this. In below example, we are creating 
+To create a new VM pre-configured with a Laravel application from Github, use this. In below example, we are creating a new booty with your latest application code. 
+
 ``` json
 curl --request POST \
-  --url >>>Your_bootyman_application_url<<< \
-  --header 'authorization: Bearer >>>your_token_here<<<' \
+  --url [Your_bootyman_application_url] \
+  --header 'authorization: Bearer [your_token_here]' \
   --header 'content-type: application/json' \
   --data '{
-	"source_code": "https://github.com/your-name/application.git",
+	"source_code": "https://github.com/your-name/your-application.git",
 	"app": "your-application"
 }'
 ```
+
+After a booty is generated, you may wish to create a snapshot of this booty so that next time you can create multiple booties using the mother snapshot.
+
+#### Create a snapshot from existing booty
+
+To create a new snapshot, you need to provide the ID of the booty that you need to generate the snapshot from,
+
+``` json
+curl --request POST \
+  --url [Your_bootyman_application_url] \
+  --header 'authorization: Bearer [your_token_here]' \
+  --header 'content-type: application/json' \
+  --data '{
+	"booty_id": [specify_booty_id]
+}'
+```
+
+Once you have a snapshot ready, feel free to create as many booties as and when required using this mother snapshot.
+
+#### Provision a new machine from existing booty
+
+To provision a new booty, use the below API call,
+
+```
+curl --request POST \
+  --url [Your_bootyman_application_url] \
+  --header 'authorization: Bearer [your_token_here]' \
+  --header 'content-type: application/json' \
+  --data '{
+	"order_id": [an_unique_number_pertaining_to_this_request],
+	"owner_email": [email_id_of_the_requester],
+	"app": "bootyman",
+	"services": {
+		"laravel-passport": true,
+		"commands": [
+			"touch /var/www/app/bootyman/testfile",
+		]
+	}
+}'
+```
+
+As you can see above, the request can take a `order_id` and `owner_email` to help you identify the owner and the requestor. This is often helpful in cases where you call this API automatically in response to some user's request to create this VM. You are also required to provide a name to your application in the request via `app` parameter. This helps you maintain multiple applications in bootyman environment.
+
+##### Services
+
+In the above request, a `services` parameter is also passed. This parameter is optional. However, this parameter can contain names of services or commands that need to be started or executed respectively in the newly created VM. Under the `commands` array, you can provide number of `shell` commands that you wish to execute once the booty in provisioned (these are passed via `cloudinit` parameter). 
 
 
 
