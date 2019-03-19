@@ -12,12 +12,14 @@ abstract class APITestCase extends TestCase
 {
         use  RefreshDatabase;
 
+        protected $user;
+
         protected function setUp(): void
         {
                 parent::setUp();
 
-                $user = factory(User::class)->create();
-                Passport::actingAs($user);
+                $this->user = factory(User::class)->create();
+                Passport::actingAs($this->user);
 
                 /**
                  * This disables the exception handling to display the stacktrace on the console

@@ -268,21 +268,38 @@ class DigitalOceanService
     private function _cloudInitFor ($appName, $services)
     {
 
+        // DEFAULT services
         $commands = '#!/bin/bash'
             . "\n"
-            . 'php '.  '/var/www/kayna/' . $appName . '/' . 'artisan key:generate '
+            . 'php '.  '/var/www/app/' . $appName . '/' . 'artisan key:generate '
             . "\n";
 
-        if (array_key_exists('commands', $services)) {
-            foreach($services['commands'] as $command) {
-                $commands .= $command . '; ' . "\n";
-            }
+
+        // QUEUE service
+        if (array_key_exists('laravel-queue', $services) && $services['laravel-queue']) {
+            $commands .= 'php '. '/var/www/app/' . $appName . '/' . 'artisan queue:restart '
+            . "\n"
+            . 'supervisorctl start laravel-worker:*'
+            . "\n";
         }
 
-
+        // PASSPORT service
         if (array_key_exists('laravel-passport', $services) && $services['laravel-passport']) {
-            $commands .= 'php '. '/var/www/kayna/' . $appName . '/' . 'artisan passport:install '
-            . "\n";
+            $commands .= 'php '. '/var/www/app/' . $appName . '/' . 'artisan passport:install '
+                . "\n";
+        }
+
+        // 
+        // if (array_key_exists('laravel-passport', $services) && $services['laravel-passport']) {
+        //     $commands .= 'php '. '/var/ww w/app/' . $appName . '/' . 'artisan passport:install '
+        //         . "\n";
+        // }
+
+        // COMMANDS executions
+        if (array_key_exists('commands', $services)) {
+            foreach($services['commands'] as $command) {
+                 $commands .= "sudo -H -u appuser bash -c '" . $command . "'; " . "\n";
+            }
         }
 
         return $commands;

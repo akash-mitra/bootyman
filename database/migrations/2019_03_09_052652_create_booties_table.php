@@ -35,7 +35,7 @@ class CreateBootiesTable extends Migration
             $table->string('branch')->default('master' );
             $table->string('commit')->default('asof' );
             $table->string('env', 10);
-            $table->mediumText('services');
+            $table->mediumText('services')->nullable();
             $table->timestamps();
         });
     }

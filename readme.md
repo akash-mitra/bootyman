@@ -92,7 +92,7 @@ Once you have a snapshot ready, feel free to create as many booties as and when 
 
 To provision a new booty, use the below API call,
 
-```
+``` json
 curl --request POST \
   --url [Your_bootyman_application_url] \
   --header 'authorization: Bearer [your_token_here]' \
@@ -114,7 +114,12 @@ As you can see above, the request can take a `order_id` and `owner_email` to hel
 
 ##### Services
 
-In the above request, a `services` parameter is also passed. This parameter is optional. However, this parameter can contain names of services or commands that need to be started or executed respectively in the newly created VM. Under the `commands` array, you can provide number of `shell` commands that you wish to execute once the booty in provisioned (these are passed via `cloudinit` parameter). 
+In the above request, a `services` parameter is also passed. This parameter is optional. However, this parameter can contain names of services or commands that need to be started or executed respectively in the newly created VM. Below is a list of services that are currently supported.
 
+1. `laravel-queue` - This will start the laravel queue service along with `supervisorctl`
+2. `laravel-passport` - This will start laravel passport service.
 
+##### Commands
+
+Under the `commands` array, you can provide number of `shell` commands that you wish to execute once the booty in provisioned (these are passed via `cloudinit` parameter). These commands are executed with `appuser` privilege.
 

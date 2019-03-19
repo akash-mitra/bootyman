@@ -24,7 +24,7 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $booties = Booty::count();
+        $booties = Booty::where('status', 'Live')->count();
         $snapshots = Snapshot::count();
         $tokens = \DB::table( 'oauth_access_tokens')->where('revoked', 0)->count();
         return view('home')

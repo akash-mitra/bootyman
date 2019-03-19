@@ -29,7 +29,7 @@
                 <tbody>
                     @foreach($booties as $b)
                     <tr>
-                        <th scope="row">{{ $loop->iteration }}</th>
+                        <th scope="row">{{ str_pad($b->id, 8, '0', STR_PAD_LEFT) }}</th>
                         <td style="vertical-align: middle;">
                             @if(empty($b->order_id))
                             Internal
