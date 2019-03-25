@@ -50,14 +50,10 @@ class BaseJob implements ShouldQueue
         $this->resource->save();
 
         $error = new Error([
-            'type' => 'error',
-            'provider' => '',
-            'region' => '',
-            'errorable_type' => 'order',
-            'errorable_id' => '',
-            'desc' => get_called_class().  '  Failed.' . $exception->getMessage(),
-            'status' => 'unresolved',
-            'token' => ''
+            'source' => get_called_class(),
+            'order_id' => $this->resource->order_id,
+            'desc' => $exception->getFile() . ':' . $exception->getLine() . ':' . $exception->getCode() . ':' . $exception->getMessage(),
+            'status' => 'Error'
         ]);
 
         $error->save();

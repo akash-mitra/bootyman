@@ -71,15 +71,6 @@ class Booty extends Model
     }
 
 
-    /**
-     * Get all the errors associated with this booty
-     *
-     * @return void
-     */
-    public function errors()
-    {
-        return $this->morphMany('App\Error', 'errorable');
-    }
 
 
     /**
@@ -125,33 +116,33 @@ class Booty extends Model
 
 
     
-    public static function provision ($orderId, $ownerEmail, $name, $size, $region, $provider)
-    {
-        $cloudProvider = self::getCloudProvider($provider);
-        $snapshot = Snapshot::latestReady();
+    // public static function provision ($orderId, $ownerEmail, $name, $size, $region, $provider)
+    // {
+    //     $cloudProvider = self::getCloudProvider($provider);
+    //     $snapshot = Snapshot::latestReady();
 
-        $booty = new Booty ([
-            'snapshot_id' => $snapshot->id,
-            'order_id' => $orderId,
-            'owner_email' => $ownerEmail,
-            'name' => $name,
-            'ip' => null,
-            'status' => 'Initiated',
-            'size' => $size,
-            'region' => $region,
-            'backup' => true,
-            'monitoring' => false,
-            'sshkey' => null,
-            'ssl_renewed_at' => null
-        ]);
+    //     $booty = new Booty ([
+    //         'snapshot_id' => $snapshot->id,
+    //         'order_id' => $orderId,
+    //         'owner_email' => $ownerEmail,
+    //         'name' => $name,
+    //         'ip' => null,
+    //         'status' => 'Initiated',
+    //         'size' => $size,
+    //         'region' => $region,
+    //         'backup' => true,
+    //         'monitoring' => false,
+    //         'sshkey' => null,
+    //         'ssl_renewed_at' => null
+    //     ]);
 
-        $booty->save();
-        orderBootyProvision::dispatch($cloudProvider, $booty)->onConnection( 'booty-assembly-line' );
-        confirmBootyProvision::dispatch($cloudProvider, $booty)->onConnection( 'booty-assembly-line' )
-            ->delay(now()->addMinutes(5));
+    //     $booty->save();
+    //     orderBootyProvision::dispatch($cloudProvider, $booty)->onConnection( 'booty-assembly-line' );
+    //     confirmBootyProvision::dispatch($cloudProvider, $booty)->onConnection( 'booty-assembly-line' )
+    //         ->delay(now()->addMinutes(5));
 
-        return $booty;
-    }
+    //     return $booty;
+    // }
 
 
     /**

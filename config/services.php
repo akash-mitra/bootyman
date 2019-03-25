@@ -44,4 +44,12 @@ return [
         ],
     ],
 
+    'infra' => [
+        'provider' => env( 'DEFAULT_INFRA_PROVIDER', 'DO'),
+        'region' => env( 'DEFAULT_INFRA_REGION', 'sgp1'),
+        'size' => env( 'DEFAULT_INFRA_SIZE', 's-1vcpu-1gb'),
+        'os' => env( 'DEFAULT_INFRA_OS_TYPE', 'ubuntu-18-04-x64'),
+        'sshkey' => env( 'DEFAULT_INFRA_SSH_FINGERPRINT'),
+    ],
+
 ];

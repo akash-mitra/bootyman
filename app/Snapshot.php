@@ -40,15 +40,6 @@ class Snapshot extends Model
     }
 
 
-    /**
-     * Get all the errors associated with this snapshot
-     *
-     * @return void
-     */
-    public function errors()
-    {
-        return $this->morphMany('App\Error', 'errorable');
-    }
 
 
     public static function rebuild(Request $request)
@@ -155,12 +146,12 @@ class Snapshot extends Model
             'owner_email' =>  $orderer,
             'status' => 'Provisioning',
             'provider' =>  $this->provider,
-            'size' => env('DEFAULT_INFRA_SIZE', 's-1vcpu-1gb'),
+            'size' => config('services.infra.size'),
             'region' => $this->origin->region,
-            'type' => env('DEFAULT_INFRA_OS_TYPE', 'ubuntu-18-04-x64'),
+            'type' => config('services.infra.os'),
             'backup' => env('PROVISIONED_BOOTY_BACKUP_POLICY', true),
             'monitoring' => false,
-            'sshkey' => env('DEFAULT_INFRA_SSH_KEY', '60344'),
+            'sshkey' => config('services.infra.sshkey'),
             'app' => $this->app,
             'source_code' => $this->origin->source_code,
             'branch' => $this->origin->branch,

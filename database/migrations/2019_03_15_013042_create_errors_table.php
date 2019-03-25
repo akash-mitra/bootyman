@@ -15,14 +15,10 @@ class CreateErrorsTable extends Migration
     {
         Schema::create('errors', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->string('type', 30);
-            $table->string('provider', 30);
-            $table->string('region', 30);
-            $table->string('errorable_type');
-            $table->bigInteger('errorable_id');
+            $table->string('source');
+            $table->bigInteger('order_id');
             $table->mediumText('desc');
             $table->string('status', 30);
-            $table->string('token');
             $table->timestamps();
         });
     }
