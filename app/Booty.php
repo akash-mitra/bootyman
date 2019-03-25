@@ -82,7 +82,7 @@ class Booty extends Model
      */
     public static function order(Request $request)
     {
-        $provider = empty($request->input('provider')) ? env('DEFAULT_INFRA_PROVIDER', 'DO') : $request->input('provider');
+        $provider = empty($request->input('provider')) ? 'DO' : $request->input('provider');
 
         $cloudProvider = self::getCloudProvider($provider);
 
@@ -91,12 +91,12 @@ class Booty extends Model
             'owner_email' =>  empty($request->input('orderer')) ? auth()->user()->email : $request->input('orderer'),
             'status' => 'Initiated',
             'provider' =>  $provider,
-            'size' => empty($request->input('size')) ? env('DEFAULT_INFRA_SIZE', 's-1vcpu-1gb') : $request->input('size'),
-            'region' => empty($request->input('region')) ? env('DEFAULT_INFRA_REGION', 'sgp1') : $request->input('region'),
-            'type' => empty($request->input('type')) ? env('DEFAULT_INFRA_OS_TYPE', 'ubuntu-18-04-x64') : $request->input('type'),
+            'size' => empty($request->input('size')) ? config('services.infra.size') : $request->input('size'),
+            'region' => empty($request->input('region')) ? config('services.infra.region') : $request->input('region'),
+            'type' => empty($request->input('type')) ? config('services.infra.os') : $request->input('type'),
             'backup' => false,
             'monitoring' => false,
-            'sshkey' => empty($request->input('sshkey')) ? env('DEFAULT_INFRA_SSH_FINGERPRINT', '60344') : $request->input('sshkey'),
+            'sshkey' => empty($request->input('sshkey')) ? config('services.infra.sshkey') : $request->input('sshkey'),
             'app' => $request->input('app'),
             'source_code' => $request->input('source_code'),
             'branch' => empty($request->input('branch')) ? 'master' : $request->input('branch'),
