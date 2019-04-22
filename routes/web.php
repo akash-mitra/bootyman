@@ -11,13 +11,17 @@
 |
 */
 
-Auth::routes( ['register' => false]);
+Auth::routes(['register' => false]);
 Route::get('/', 'HomeController@welcome')->name('welcome');
 Route::get('/home', 'HomeController@index')->name('home')->middleware('auth');
 
 Route::get('/snapshots', 'HomeController@snapshots')->name('snapshots')->middleware('auth');
 Route::get('/snapshots/{snapshot_id}', 'HomeController@snapshot')->name('snapshots.snapshot')->middleware('auth');
+
 Route::get('/booties', 'HomeController@booties')->name('booties')->middleware('auth');
+Route::get('/booties/create', 'HomeController@create')->name('booties.new')->middleware('auth');
+Route::delete('/booties/{booty}', 'HomeController@bootiesSoftDelete')->name('booty.softdelete')->middleware('auth');
+
 Route::get('/cloud', 'HomeController@cloud')->name('cloud')->middleware('auth');
 Route::get('/token', 'HomeController@token')->name('token')->middleware('auth');
 Route::get('/errors', 'HomeController@errors')->name('errors')->middleware('auth');

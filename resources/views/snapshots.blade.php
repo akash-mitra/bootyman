@@ -10,8 +10,8 @@
             </div>
             @endif
 
-            <h3 class="pt-4 pb-3">Snapshots</h3>
-
+            <h3 class="pt-4 pb-1">Snapshots</h3>
+            <p class="pb-2">Snapshots are hibernated machines stored inside the cloud service provider. A new live booty can be provisioned from the snapshots</p>
             <table class="table table-dark1 table-striped table-hover table-sm mt-2">
                 <thead>
                     <tr>

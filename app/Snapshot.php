@@ -15,7 +15,7 @@ use App\CloudProviders\DigitalOceanService;
 
 class Snapshot extends Model
 {
-    protected $fillable = [ 'name', 'app', 'provider', 'booty_id', 'internal_snapshot_id', 'status', 'env', 'order_id', 'owner_email'];
+    protected $fillable = ['name', 'app', 'provider', 'booty_id', 'internal_snapshot_id', 'status', 'env', 'order_id', 'owner_email'];
 
 
     /**
@@ -46,7 +46,7 @@ class Snapshot extends Model
     {
         $booty = Booty::order($request);
 
-        $cloudProvider = self::getCloudProvider( $booty->provider);
+        $cloudProvider = self::getCloudProvider($booty->provider);
 
         $snapshot = new Snapshot([
             'name' => now()->format('Ymdhi') . '-',
@@ -70,9 +70,8 @@ class Snapshot extends Model
             ->delay(now()->addMinutes(30));
 
         return $snapshot;
-
     }
-    
+
 
     /**
      * Orders the creation of a new snapshot from the booty id provided.
@@ -80,14 +79,14 @@ class Snapshot extends Model
      * @param Request $request
      * @return App\Snapshot
      */
-    public static function order (Request $request)
+    public static function order(Request $request)
     {
-        $booty = Booty::findOrFail( $request->input('booty_id') );
+        $booty = Booty::findOrFail($request->input('booty_id'));
 
         if ($booty->status != 'Live' && $booty->status != 'Booty down') {
             throw new \Exception('Can not create snapshot if source booty is not in "Live" or "Booty down" state');
         }
-        
+
         $provider = empty($request->input('provider')) ? env('DEFAULT_INFRA_PROVIDER', 'DO') : $request->input('provider');
         $cloudProvider = self::getCloudProvider($provider);
 
@@ -105,8 +104,8 @@ class Snapshot extends Model
 
         $snapshot->save();
 
-        orderSnapshotCreate::dispatch($cloudProvider, $snapshot)->onConnection( 'booty-assembly-line' );
-        confirmSnapshotStatus::dispatch($cloudProvider, $snapshot)->onConnection( 'booty-assembly-line')
+        orderSnapshotCreate::dispatch($cloudProvider, $snapshot)->onConnection('booty-assembly-line');
+        confirmSnapshotStatus::dispatch($cloudProvider, $snapshot)->onConnection('booty-assembly-line')
             ->delay(now()->addMinutes(5));
 
         return $snapshot;
@@ -119,13 +118,13 @@ class Snapshot extends Model
      * @param String $app
      * @return void
      */
-    public static function latestFor (String $app)
+    public static function latestFor(String $app)
     {
         return self::where('status', 'Snapshot Ready')
             ->where('app', $app)
             ->whereNotNull('internal_snapshot_id')
             ->latest()
-            ->first();
+            ->firstOrFail();
     }
 
 
@@ -136,7 +135,7 @@ class Snapshot extends Model
      * @param String $orderer
      * @return void
      */
-    public function provision (String $orderId, String $orderer, $services = null)
+    public function provision(String $orderId, String $orderer, $services = null)
     {
         $cloudProvider = self::getCloudProvider($this->provider);
 
@@ -222,12 +221,12 @@ class Snapshot extends Model
      *
      * @return void
      */
-    public function terminate()
+    public function terminate($request)
     {
         $cloudProvider = self::getCloudProvider($this->provider);
-        
+
         orderSnapshotDelete::dispatch($cloudProvider, $this->internal_snapshot_id)->onConnection('booty-assembly-line');
-        
+
         $this->status = 'Deleted';
         $this->save();
 
@@ -241,11 +240,12 @@ class Snapshot extends Model
      * @param [type] $provider
      * @return void
      */
-    private static function getCloudProvider ($provider) {
+    private static function getCloudProvider($provider)
+    {
         $cloudProvider = null;
 
-        if (strtoupper($provider) ==='DO') {
-             $cloudProvider = new DigitalOceanService();
+        if (strtoupper($provider) === 'DO') {
+            $cloudProvider = new DigitalOceanService();
         }
 
         return $cloudProvider;

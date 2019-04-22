@@ -36,6 +36,7 @@ class CreateBootiesTable extends Migration
             $table->string('commit')->default('asof' );
             $table->string('env', 10);
             $table->mediumText('services')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

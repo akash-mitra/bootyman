@@ -23,9 +23,13 @@
                     @endif
                 </div>
             </h3>
-
+            <hr>
             <table>
                 <tbody>
+                    <tr>
+                        <td class="px-1"><span class="text-secondary">Host:</span></td>
+                        <td class="px-4"><code>{{ $snapshot->provider }}</code></td>
+                    </tr>
                     <tr>
                         <td class="px-1"><span class="text-secondary">Repository:</span></td>
                         <td class="px-4"><code>{{ $snapshot->origin->source_code }}</code></td>
@@ -43,12 +47,16 @@
                         <td class="px-4"><code>Order ID: {{ $snapshot->order_id }} From {{ $snapshot->owner_email }}</code></td>
                     </tr>
                     <tr>
+                        <td class="px-1"><span class="text-secondary">Order Env:</span></td>
+                        <td class="px-4"><code>{{ $snapshot->env }}</code></td>
+                    </tr>
+                    <tr>
                         <td class="px-1"><span class="text-secondary">Last Updated:</span></td>
                         <td class="px-4"><code>{{ $snapshot->updated_at->format('l jS \\of F Y h:i:s A') }}</code></td>
                     </tr>
                 </tbody>
             </table>
-
+            <hr>
             <h3 class="mt-4">Booties</h3>
             <table class="table table-dark1 table-striped table-hover table-sm mt-4">
                 <thead>

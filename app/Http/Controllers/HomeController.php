@@ -80,6 +80,15 @@ class HomeController extends Controller
         return view('password');
     }
 
+    public function bootiesSoftDelete(Booty $booty)
+    {
+        $booty->delete();
+        
+        session()->flash('status', sprintf("Booty [%s] deleted successfully.", $booty->id));
+
+        return redirect()->back();
+    }
+
 
     public function passwordChange(Request $request)
     {    

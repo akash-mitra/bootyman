@@ -10,7 +10,10 @@
             </div>
             @endif
 
-            <h3 class="pt-4 pb-3">Booties</h3>
+
+            <h3 class="pt-4 pb-1">Application Booties</h3>
+            <p class="pb-2">Booties are virtual machines that are either origined from a snapshot or directly from application codes.</p>
+            <!-- <a class="float-right" href="{{ route('booties.new') }}">New Booty</a> -->
 
             <table class="table table-dark1 table-striped table-hover table-sm mt-2">
                 <thead>
@@ -23,6 +26,7 @@
                         <th scope="col">Property</th>
                         <th scope="col">Origin</th>
                         <th scope="col">Updated</th>
+                        <th scope="col">Action</th>
                     </tr>
                 </thead>
 
@@ -54,7 +58,9 @@
                         </td>
                         <td style="vertical-align: middle;">
                             @if($b->status === 'Live')
-                            <span class="py-1 px-2 rounded bg-success text-white">{{ $b->status }}</span>
+                            <span class="py-1 px-2 rounded bg-success text-white">
+                                {{ $b->status }}
+                            </span>
                             @else
                             {{ $b->status }}
                             @endif
@@ -72,6 +78,21 @@
 
                         </td>
                         <td style="vertical-align: middle;">{{ $b->updated_at->diffForHumans() }}</td>
+
+                        <td>
+                            @if($b->status === 'Booty missing')
+
+                            <a class="" href="{{ route('booty.softdelete', $b->id) }}" onclick="event.preventDefault();
+                                                        document.getElementById('soft-delete-form').submit();">Clear
+                            </a>
+
+                            <form id="soft-delete-form" action="{{ route('booty.softdelete', $b->id) }}" method="POST" style="display: none;">
+                                @csrf
+                                @method('DELETE')
+                            </form>
+                            @endif
+                        </td>
+
                     </tr>
                     @endforeach
                 </tbody>
@@ -83,4 +104,4 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection

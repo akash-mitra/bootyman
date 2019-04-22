@@ -3,16 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Booty;
+use App\Journal;
 use App\Snapshot;
+use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class BootyController extends Controller
 {
 
-    public function __construct()
+    public function __construct(Request $request)
     {
-        return $this->middleware('auth:api');
+        $this->middleware('auth:api');
+
+        if (!$request->has('order_id')) {
+            $request->merge(['order_id' => Journal::unique()]);
+        }
     }
 
 
@@ -24,17 +30,24 @@ class BootyController extends Controller
     public function createBooty(Request $request)
     {
         $this->validate($request, [
-            'source_code' => 'required',
+            'source_code' => 'required|url',
             'app' => 'required'
         ]);
 
-        $booty = Booty::order($request);
+        Journal::req('Booty: create fresh', 0, __METHOD__, $request->order_id, [
+            'request' => $request->input(),
+        ]);
 
-        return [
-            'status' => 'in-progress',
-            'message' => 'New booty ordered',
-            'booty' => $booty
-        ];   
+        try {
+            $booty = Booty::order($request);
+            return [
+                'status' => 'in-progress',
+                'message' => 'New booty ordered',
+                'booty' => $booty
+            ];
+        } catch (Exception $e) {
+            return $this->logErrorAndRespond(__METHOD__, 'Failed to create booty.', $e);
+        }
     }
 
 
@@ -43,17 +56,25 @@ class BootyController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function createSnapshot( Request $request )
+    public function createSnapshot(Request $request)
     {
         $this->validate($request, ['booty_id' => 'required']);
 
-        $snapshot = Snapshot::order($request);
+        Journal::req('Snapshot: create from booty', 0, __METHOD__, $request->order_id, [
+            'request' => $request->input(),
+        ]);
 
-        return [
-            'status' => 'in-progress',
-            'message' => 'Snapshot from booty ordered',
-            'snapshot' => $snapshot
-        ];
+        try {
+            $snapshot = Snapshot::order($request);
+
+            return [
+                'status' => 'in-progress',
+                'message' => 'Snapshot from booty ordered',
+                'snapshot' => $snapshot
+            ];
+        } catch (Exception $e) {
+            return $this->logErrorAndRespond(__METHOD__, 'Snapshot creation failed.', $e);
+        }
     }
 
 
@@ -64,20 +85,28 @@ class BootyController extends Controller
      * @param Request $request
      * @return void
      */
-    public function rebuild (Request $request) 
+    public function rebuild(Request $request)
     {
         $this->validate($request, [
             'source_code' => 'required',
             'app' => 'required'
         ]);
 
-        $snapshot = Snapshot::rebuild($request);
+        Journal::req('Snapshot: Refresh snapshot with latest code', 0, __METHOD__, $request->order_id, [
+            'request' => $request->input(),
+        ]);
 
-        return [
-            'status' => 'in-progress',
-            'message' => 'New Snapshot refresh ordered',
-            'booty' => $snapshot
-        ];   
+        try {
+            $snapshot = Snapshot::rebuild($request);
+
+            return [
+                'status' => 'in-progress',
+                'message' => 'New Snapshot refresh ordered',
+                'booty' => $snapshot
+            ];
+        } catch (Exception $e) {
+            return $this->logErrorAndRespond(__METHOD__, 'Snapshot refresh failed.', $e);
+        }
     }
 
 
@@ -88,26 +117,27 @@ class BootyController extends Controller
      * @param Request $request
      * @return void
      */
-    public function deleteBooty(Request $request) 
+    public function deleteBooty(Request $request)
     {
         $this->validate($request, ['id' => 'required']);
 
-        $booty = Booty::find($request->input('id'));
+        Journal::req('Booty: Delete request', 0, __METHOD__, $request->order_id, [
+            'request' => $request->input(),
+        ]);
 
-        if ($booty === null) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'Can not find the booty'
-            ],404);
-         }
-
-        $booty->terminate();
-
-        return [
-            'status' => 'in-progress',
-            'message' => 'Ordered for booty VM deletion',
-            'booty' => $booty
-        ];  
+        try {
+            $booty = Booty::findOrFail($request->input('id'));
+            $booty->terminate($request);
+            return [
+                'status' => 'in-progress',
+                'message' => 'Ordered for booty VM deletion',
+                'booty' => $booty
+            ];
+        } catch (ModelNotFoundException $e) {
+            return $this->logErrorAndRespond(__METHOD__, 'The booty can not be found in bootyman repository.', $e, 404);
+        } catch (Exception $e) {
+            return $this->logErrorAndRespond(__METHOD__, 'Booty deletion failed.', $e);
+        }
     }
 
 
@@ -121,40 +151,41 @@ class BootyController extends Controller
     {
         $this->validate($request, ['id' => 'required']);
 
-        $snapshot = Snapshot::find($request->input('id'));
+        Journal::req('Delete a snapshot', 0, __METHOD__, $request->order_id, [
+            'request' => $request->input(),
+        ]);
 
-        if ($snapshot === null) {
-            return response()->json([
-                'status' => 'failed',
-                'message' => 'Can not find the snapshot'
-            ], 404);
+        try {
+            $snapshot = Snapshot::find($request->input('id'));
+            $snapshot->terminate($request);
+            return [
+                'status' => 'in-progress',
+                'message' => 'Ordered for snapshot image deletion',
+                'snapshot' => $snapshot
+            ];
+        } catch (ModelNotFoundException $e) {
+            return $this->logErrorAndRespond(__METHOD__, 'The snapshot can not be found in bootyman repository.', $e, 404);
+        } catch (Exception $e) {
+            return $this->logErrorAndRespond(__METHOD__, 'Snapshot deletion failed.', $e);
         }
-
-        $snapshot->terminate();
-
-        return [
-            'status' => 'in-progress',
-            'message' => 'Ordered for snapshot image deletion',
-            'snapshot' => $snapshot
-        ];  
     }
 
 
-    public function deleteAll(Request $request)
-    {
-        $this->validate($request, ['id' => 'required']);
-        
-        $image = Snapshot::findOrFail($request->input('id'));
+    // public function deleteAll(Request $request)
+    // {
+    //     $this->validate($request, ['id' => 'required']);
 
-        Snapshot::orderImageDelete($image);
-        Snapshot::orderSnapshotDelete($image);
+    //     $image = Snapshot::findOrFail($request->input('id'));
 
-        return [
-            'status' => 'in-progress',
-            'message' => 'Ordered for both image and snapshot deletion',
-            'snapshot' => $image
-        ];  
-    }
+    //     Snapshot::orderImageDelete($image);
+    //     Snapshot::orderSnapshotDelete($image);
+
+    //     return [
+    //         'status' => 'in-progress',
+    //         'message' => 'Ordered for both image and snapshot deletion',
+    //         'snapshot' => $image
+    //     ];
+    // }
 
 
     /**
@@ -165,32 +196,33 @@ class BootyController extends Controller
     public function provision(Request $request)
     {
         $this->validate($request, [
-            'order_id' => 'required',
             'owner_email' => 'required',
             'app' => 'required'
         ]);
 
-        $snapshot = Snapshot::latestFor($request->input('app'));
+        Journal::req('Booty: Provision from snapshot', 0, __METHOD__, $request->order_id, [
+            'request' => $request->input(),
+        ]);
 
-        if ($snapshot === null) {
-            return response()->json( [
-                'status' => 'failed',
-                'message' => 'Can not find snapshot for the app: ' . $request->input('app')
-            ],404);
+        try {
+            $snapshot = Snapshot::latestFor($request->input('app'));
+
+            $booty = $snapshot->provision(
+                $request->input('order_id'),
+                $request->input('owner_email'),
+                $request->input('services')
+            );
+
+            return [
+                'status' => 'in-progress',
+                'message' => 'Provisioning new booty',
+                'booty' => $booty
+            ];
+        } catch (ModelNotFoundException $e) {
+            return $this->logErrorAndRespond(__METHOD__, 'No snapshot image exists for the application requested.', $e, 404);
+        } catch (Exception $e) {
+            return $this->logErrorAndRespond(__METHOD__, 'Booty provision failed', $e);
         }
-
-        $booty = $snapshot->provision( 
-            $request->input('order_id'), 
-            $request->input('owner_email'),
-            $request->input('services')
-        );
-
-        return [
-            'status' => 'in-progress',
-            'message' => 'Provisioning new booty',
-            'booty' => $booty
-        ];
-
     }
 
 
@@ -216,13 +248,35 @@ class BootyController extends Controller
                 'status' => 'failed',
                 'message' => 'Can not find the domain ID'
             ], 404);
-
         }
 
         $provider = empty($request->input('provider')) ? 'DO' : $request->input('provider');
         $domainName = $request->input('domain');
         return Booty::setDomainName($booty, $domainName, $provider);
     }
-    
-    
+
+
+
+    /**
+     * Logs the error and returns a HTTP error response with JSON body
+     *
+     * @param string $source Source method and/or line number
+     * @param string $message Custom error message
+     * @param \Exception $e 
+     * @param integer $httpStatusCode
+     */
+    private function logErrorAndRespond(string $source, string $message, Exception $e, $httpStatusCode = 500)
+    {
+        $request = request();
+
+        Journal::error($e->getMessage(), $e->getCode(), $source, $request->order_id, [
+            'request' => $request->input(),
+        ]);
+
+        return response()->json([
+            'status' => 'failed',
+            'message' => $message,
+            'order' => request()->order_id
+        ], $httpStatusCode);
+    }
 }

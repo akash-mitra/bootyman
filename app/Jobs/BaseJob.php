@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\Error;
+use App\Journal;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
@@ -13,7 +13,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 class BaseJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    
+
     protected $resource;
     protected $cloudProvider;
     // The --timeout value should always be at least 
@@ -34,6 +34,12 @@ class BaseJob implements ShouldQueue
         $this->resource = $resource;
         $this->timeout = $timeout;
         $this->tries = $tries;
+
+        Journal::info('Queue: begin job', 0, __METHOD__, $resource->order_id, [
+            'queue' => $this->queue,
+            'tries' => $tries,
+            'timeout' => $timeout,
+        ]);
     }
 
 
@@ -45,17 +51,10 @@ class BaseJob implements ShouldQueue
      */
     public function failed(\Exception $exception)
     {
-        \Log::warn($exception->getMessage());
-        $this->resource->status = get_called_class().' Failed';
-        $this->resource->save();
-
-        $error = new Error([
-            'source' => get_called_class(),
-            'order_id' => $this->resource->order_id,
-            'desc' => $exception->getFile() . ':' . $exception->getLine() . ':' . $exception->getCode() . ':' . $exception->getMessage(),
-            'status' => 'Error'
+        Journal::error($exception->getMessage(), $exception->getCode(), __METHOD__, $this->resource->order_id, [
+            'queue' => $this->queue
         ]);
-
-        $error->save();
+        $this->resource->status = get_called_class() . ' Failed';
+        $this->resource->save();
     }
 }

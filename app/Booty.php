@@ -12,9 +12,14 @@ use App\Jobs\orderDomainNameChange;
 use App\Jobs\confirmDomainNameChange;
 use Illuminate\Database\Eloquent\Model;
 use App\CloudProviders\DigitalOceanService;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 
 class Booty extends Model
 {
+
+    use SoftDeletes;
+
     protected $fillable = [
         'snapshot_id',
         'order_id',
@@ -58,7 +63,7 @@ class Booty extends Model
      *
      * @return void
      */
-    public function terminate()
+    public function terminate($request)
     {
         $cloudProvider = self::getCloudProvider($this->provider);
 
@@ -115,7 +120,7 @@ class Booty extends Model
 
 
 
-    
+
     // public static function provision ($orderId, $ownerEmail, $name, $size, $region, $provider)
     // {
     //     $cloudProvider = self::getCloudProvider($provider);
@@ -153,7 +158,7 @@ class Booty extends Model
      * @param String $provider
      * @return void
      */
-    public static function setDomainName (Booty $booty, String $domainName, String $provider)
+    public static function setDomainName(Booty $booty, String $domainName, String $provider)
     {
         $cloudProvider = self::getCloudProvider($provider);
 
@@ -179,7 +184,7 @@ class Booty extends Model
     {
         $cloudProvider = null;
 
-        if (strtoupper($provider) ==='DO')  {
+        if (strtoupper($provider) === 'DO') {
             $cloudProvider = new DigitalOceanService();
         }
 
