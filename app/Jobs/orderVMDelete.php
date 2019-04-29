@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 class orderVMDelete extends BaseJob
 {
-    
+
     /**
      * Execute the job.
      *
@@ -14,5 +14,4 @@ class orderVMDelete extends BaseJob
     {
         $this->cloudProvider->deleteVM($this->resource);
     }
-
 }

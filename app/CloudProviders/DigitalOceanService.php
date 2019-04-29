@@ -4,12 +4,16 @@ namespace App\CloudProviders;
 
 use App\Booty;
 use App\Snapshot;
+use App\Journal;
+use Exception;
 use GrahamCampbell\DigitalOcean\Facades\DigitalOcean;
 
 class DigitalOceanService
 {
     private $defaultSize;
     private $defaultRegion;
+    private $order_id;
+    private $commands = [];
 
     public function __construct()
     {
@@ -27,27 +31,35 @@ class DigitalOceanService
     public function createVM(Booty $booty)
     {
         $cloudInitCommand = '#!/bin/bash'
-                            . "\n"
-                            . 'curl --output /root/b.sh https://raw.githubusercontent.com/akash-mitra/booty/master/booty.sh'
-                            . "\n"
-                            . 'bash /root/b.sh ' . $booty->source_code;
+            . "\n"
+            . 'curl --output /root/b.sh https://raw.githubusercontent.com/akash-mitra/booty/master/booty.sh'
+            . "\n"
+            . 'bash /root/b.sh ' . $booty->source_code;
 
-        $droplet = DigitalOcean::droplet()->create(
-            empty($booty->name) ? 'domain-unassigned' : $booty->name, // name
-            $booty->region, // region
-            $booty->size,         // size - minimum size
-            $booty->type,         // image - public image slug
-            $booty->backup,       // backup
-            false,                // ipv6
-            false,                // private networking
-            [$booty->sshkey],     // ssh keys
-            $cloudInitCommand,    // user data
-            $booty->monitoring    // monitoring
-        );
+        try {
+            $droplet = DigitalOcean::droplet()->create(
+                empty($booty->name) ? 'domain-unassigned' : $booty->name, // name
+                $booty->region, // region
+                $booty->size,         // size - minimum size
+                $booty->type,         // image - public image slug
+                $booty->backup,       // backup
+                false,                // ipv6
+                false,                // private networking
+                [$booty->sshkey],     // ssh keys
+                $cloudInitCommand,    // user data
+                $booty->monitoring    // monitoring
+            );
 
-        $booty['internal_machine_id'] = $droplet->id;
-        $booty->status = 'Building new booty';
-        $booty->save();
+            $booty['internal_machine_id'] = $droplet->id;
+            $booty->status = 'Building new booty';
+            $booty->save();
+
+            Journal::info('CloudService: create VM request processed', 0, __METHOD__, $this->order_id);
+        } catch (Exception $e) {
+
+            Journal::error(get_class($e) . ': ' . $e->getMessage(), $e->getCode(), __METHOD__, $this->order_id, ['booty' => $booty->toArray()]);
+            throw $e;
+        }
     }
 
     /**
@@ -61,10 +73,19 @@ class DigitalOceanService
     {
         $booty_id = $snapshot->origin->internal_machine_id;
         $snapshotName = $snapshot->name . $snapshot->id;
-        DigitalOcean::droplet()->snapshot($booty_id, $snapshotName);
-        $snapshot->status = 'Building new snapshot';
-        $snapshot->name = $snapshotName;
-        $snapshot->save();
+
+        try {
+            DigitalOcean::droplet()->snapshot($booty_id, $snapshotName);
+            $snapshot->status = 'Building new snapshot';
+            $snapshot->name = $snapshotName;
+            $snapshot->save();
+
+            Journal::info('CloudService: create Snapshot request processed.', 0, __METHOD__, $this->order_id);
+        } catch (Exception $e) {
+
+            Journal::error(get_class($e) . ': ' . $e->getMessage(), $e->getCode(), __METHOD__, $this->order_id, ['snapshot' => $snapshot->toArray()]);
+            throw $e;
+        }
     }
 
     /**
@@ -75,7 +96,14 @@ class DigitalOceanService
      */
     public function deleteVM(String $internal_machine_id)
     {
-        DigitalOcean::droplet()->delete($internal_machine_id);
+        try {
+            DigitalOcean::droplet()->delete($internal_machine_id);
+            Journal::info('CloudService: delete VM request processed.', 0, __METHOD__, $this->order_id);
+        } catch (Exception $e) {
+
+            Journal::error(get_class($e) . ': ' . $e->getMessage(), $e->getCode(), __METHOD__, $this->order_id, ['internal_machine_id' => $internal_machine_id]);
+            throw $e;
+        }
     }
 
     /**
@@ -86,24 +114,16 @@ class DigitalOceanService
      */
     public function deleteSnapshot(String $internal_snapshot_id)
     {
-        DigitalOcean::image()->delete($internal_snapshot_id);
+        try {
+            DigitalOcean::image()->delete($internal_snapshot_id);
+            Journal::info('CloudService: delete Snapshot request processed.', 0, __METHOD__, $this->order_id);
+        } catch (Exception $e) {
+            Journal::error(get_class($e) . ': ' . $e->getMessage(), $e->getCode(), __METHOD__, $this->order_id, ['internal_snapshot_id' => $internal_snapshot_id]);
+            throw $e;
+        }
     }
 
-    // public function deleteSnapshot(Snapshot $image)
-    // {
-    //     $snapshots = DigitalOcean::image()->getAll(['private' => true]);
-    //     $status = $image->status;
-    //     foreach($snapshots as $snapshot) {
-    //         if ($snapshot->name === $image->name) {
-    //             DigitalOcean::image()->delete($snapshot->id);
-    //             $status = 'Snapshot Deletion Requested';
-    //             break;
-    //         }
-    //     }
-    //     $image->status = $status;
-    //     $image->save();
-
-    // }
+    
 
     /**
      * Given a booty, it checks if the booty actually exists in
@@ -119,13 +139,16 @@ class DigitalOceanService
         try {
             $droplet = DigitalOcean::droplet()->getById($booty->internal_machine_id);
             $booty->ip = $droplet->networks[0]->ipAddress;
-        } catch (\Exception $e) {
+            Journal::info('CloudService: Confirmed VM exists.', 0, __METHOD__, $this->order_id);
+        } catch (Exception $e) {
             $status = 'Booty missing';
+            Journal::warning($e->getMessage(), $e->getCode(), __METHOD__, $this->order_id, ['booty' => $booty->toArray()]);
         }
 
         $booty->status = $status;
         $booty->save();
     }
+
 
     /**
      * Given a snapshot, this checks in the digitalocean's repo
@@ -137,7 +160,16 @@ class DigitalOceanService
      */
     public function confirmSnapshot(Snapshot $snapshot)
     {
-        $privateImages = DigitalOcean::image()->getAll(['private' => true]);
+
+        if ($snapshot->status === 'Snapshot Ready') return;
+                
+        try {
+            $privateImages = DigitalOcean::image()->getAll(['private' => true]);
+            Journal::info('CloudService: Received list of snapshots.', 0, __METHOD__, $this->order_id);
+        } catch (Exception $e) {
+            Journal::error(get_class($e) . ': ' . $e->getMessage(), $e->getCode(), __METHOD__, $this->order_id, ['snapshot' => $snapshot->toArray()]);
+            throw $e;
+        }
 
         foreach ($privateImages as $image) {
             if ($image->name === $snapshot->name) {
@@ -150,7 +182,7 @@ class DigitalOceanService
 
         $snapshot->status = 'Snapshot Not Found';
         $snapshot->internal_snapshot_id = null;
-
+        Journal::warning('Snapshot not found in cloud', 0, __METHOD__, $this->order_id, ['snapshot' => $snapshot->toArray()]);
         return $snapshot->save();
     }
 
@@ -162,27 +194,33 @@ class DigitalOceanService
      */
     public function provisionVM(Booty $booty)
     {
-        $cloudInitCommand = $this->_cloudInitFor(
+        $cloudInitCommand = $this->cloudProvisionScript(
             $booty->app,
-            json_decode($booty->services, true)
+            json_decode($booty->services, true),
+            'akash',
+            'pakamala'
         );
 
-        $droplet = DigitalOcean::droplet()->create(
-            $booty->order_id,     // name
-            $booty->region, // region
-            $booty->size,         // size - minimum size
-            $booty->origin->internal_snapshot_id,  // image - public image slug
-            $booty->backup,       // backup
-            false,                // ipv6
-            false,                // private networking
-            [$booty->sshkey],     // ssh keys
-            $cloudInitCommand,    // user data
-            $booty->monitoring    // monitoring
-        );
-
-        $booty['internal_machine_id'] = $droplet->id;
-
-        $booty->save();
+        try {
+            $droplet = DigitalOcean::droplet()->create(
+                $booty->order_id,     // name
+                $booty->region, // region
+                $booty->size,         // size - minimum size
+                $booty->origin->internal_snapshot_id,  // image - public image slug
+                $booty->backup,       // backup
+                false,                // ipv6
+                false,                // private networking
+                [$booty->sshkey],     // ssh keys
+                $cloudInitCommand,    // user data
+                $booty->monitoring    // monitoring
+            );
+            $booty['internal_machine_id'] = $droplet->id;
+            $booty->save();
+            Journal::info('CloudService: provision VM request processed.', 0, __METHOD__, $this->order_id);
+        } catch (Exception $e) {
+            Journal::error(get_class($e) . ': ' . $e->getMessage(), $e->getCode(), __METHOD__, $this->order_id, ['booty' => $booty->toArray()]);
+            throw $e;
+        }
     }
 
     public function finaliseBooty(Booty $booty)
@@ -194,11 +232,15 @@ class DigitalOceanService
             $booty->ssl_renewed_at = now();
         } catch (\Exception $e) {
             $status = 'Provisioning Error';
+            Journal::warning($e->getMessage(), $e->getCode(), __METHOD__, $this->order_id, ['booty' => $booty->toArray()]);
         }
 
         $booty->status = $status;
         $booty->save();
     }
+
+
+
 
     public function changeDomainName(Booty $booty, String $domainName)
     {
@@ -230,6 +272,8 @@ class DigitalOceanService
         $booty->save();
     }
 
+
+
     public static function resources()
     {
         return [
@@ -245,35 +289,61 @@ class DigitalOceanService
      * @param  array  $services
      * @return string
      */
-    private function _cloudInitFor($appName, $services)
+    private function cloudProvisionScript($appName, $services)
     {
-        // DEFAULT services
-        $commands = '#!/bin/bash'
-            . "\n"
-            . 'php ' . '/var/www/app/' . $appName . '/' . 'artisan key:generate '
-            . "\n";
+        $init = new CloudInitBash('/var/www/app/' . $appName);
+        $init->artisan('key:generate');
 
-        // QUEUE service
-        if (array_key_exists('laravel-queue', $services) && $services['laravel-queue']) {
-            $commands .= 'php ' . '/var/www/app/' . $appName . '/' . 'artisan queue:restart '
-            . "\n"
-            . 'supervisorctl start laravel-worker:*'
-            . "\n";
+        // add user service
+        if ($this->serviceHas($services, 'laravel-add-user')) {
+            $param = $services['laravel-add-user'];
+            $init->artisan('user:add ' . $param['name'] . ' ' . $param['email'] . ' ' . $param['password'] . ' admin');
         }
 
         // PASSPORT service
-        if (array_key_exists('laravel-passport', $services) && $services['laravel-passport']) {
-            $commands .= 'php ' . '/var/www/app/' . $appName . '/' . 'artisan passport:install '
-                . "\n";
+        if ($this->serviceHas($services, 'laravel-passport')) {
+            $init->artisan('passport:install');
         }
 
-        // COMMANDS executions
-        if (array_key_exists('commands', $services)) {
-            foreach ($services['commands'] as $command) {
-                $commands .= "sudo -H -u appuser bash -c '" . $command . "'; " . "\n";
+        // QUEUE service
+        if ( $this->serviceHas($services, 'laravel-queue') ) {
+            $init->artisan('queue:restart');
+            $init->command( 'supervisorctl start laravel-worker:*');
+        }
+
+        if ($this->serviceHas($services, 'environment')) {
+            $props = $services['environment'];
+            foreach($props as $key => $value) {
+                $init->env($key, $value);
             }
         }
 
-        return $commands;
+        // COMMANDS executions
+        if ($this->serviceHas($services, 'commands')) {
+            foreach ($services['commands'] as $command) {
+                $init->command("sudo -H -u appuser bash -c '" . $command . "'");
+            }
+        }
+
+        return $init->getCloudInitScript();
+    }
+
+
+
+
+    /**
+     * This can be used to set (or change) an order Id for the
+     * cloud service. Some operations may use this order id as
+     * correlation id while logging error or information etc.
+     */
+    public function setOrderId($order_id)
+    {
+        $this->order_id = $order_id;
+    }
+
+
+    private function serviceHas($services, $service_key)
+    {
+        return array_key_exists($service_key, $services) && ! empty($services[$service_key]);
     }
 }

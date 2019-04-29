@@ -10,8 +10,7 @@
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
-    <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}" defer></script>
+
 
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.gstatic.com">
@@ -19,6 +18,7 @@
 
     <!-- Styles -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    @yield('css')
 </head>
 
 <body>
@@ -26,7 +26,7 @@
         <nav class="navbar navbar-expand-md navbar-light navbar-laravel">
             <div class="container">
                 <a class="navbar-brand" href="{{ url('/') }}">
-                    {{ config('app.name', 'Laravel') }}
+                    {{ config('app.name', 'Bootyman') }}
                 </a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
                     <span class="navbar-toggler-icon"></span>
@@ -52,9 +52,6 @@
                             <a class="nav-link" href="{{ route('cloud') }}">{{ __('Cloud Inventory') }}</a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('errors') }}">{{ __('Errors') }}</a>
-                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ route('docs') }}">{{ __('Docs') }}</a>
                         </li>
@@ -109,6 +106,10 @@
             @yield('content')
         </main>
     </div>
+
+    <!-- Scripts -->
+    <script src="{{ asset('js/app.js') }}"></script>
+    @yield('script')
 </body>
 
-</html> 
+</html>

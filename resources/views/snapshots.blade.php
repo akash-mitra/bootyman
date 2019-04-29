@@ -19,9 +19,10 @@
                         <th scope="col">Name</th>
                         <th scope="col">Application</th>
                         <th scope="col">Booties</th>
-                        <th scope="col">Snapshot ID</th>
+                        <th scope="col">Host ID</th>
                         <th scope="col">Status</th>
                         <th scope="col">Created</th>
+                        <th scopr="col">Action</th>
                     </tr>
                 </thead>
 
@@ -52,6 +53,15 @@
 
                         </td>
                         <td style="vertical-align: middle;">{{ $s->created_at->diffForHumans() }}</td>
+                        <td>
+                            @if($s->status === 'Snapshot Not Found' || $s->status === 'Deleted')
+                            <form action="{{ route('snapshot.softdelete', $s->id) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-link">Clear</button>
+                            </form>
+                            @endif
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -62,4 +72,4 @@
         </div>
     </div>
 </div>
-@endsection 
+@endsection

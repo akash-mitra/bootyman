@@ -24,6 +24,7 @@ class CreateSnapshotsTable extends Migration
             $table->string('env', 10);
             $table->string('order_id');
             $table->string('owner_email');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

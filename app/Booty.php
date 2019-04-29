@@ -65,9 +65,10 @@ class Booty extends Model
      */
     public function terminate($request)
     {
-        $cloudProvider = self::getCloudProvider($this->provider);
+        $cloudProvider = self::getCloudProvider($this->provider, $request->order_id);
 
-        orderVMDelete::dispatch($cloudProvider, $this->internal_machine_id)->onConnection('booty-assembly-line');
+        orderVMDelete::dispatch($cloudProvider, $this->internal_machine_id, $request->order_id)
+            ->onConnection('booty-assembly-line');
 
         $this->status = 'Deleted';
         $this->save();
@@ -89,10 +90,10 @@ class Booty extends Model
     {
         $provider = empty($request->input('provider')) ? 'DO' : $request->input('provider');
 
-        $cloudProvider = self::getCloudProvider($provider);
+        $cloudProvider = self::getCloudProvider($provider, $request->order_id);
 
         $booty = new Booty([
-            'order_id' => empty($request->input('order_id')) ? 0 : $request->input('order_id'),
+            'order_id' => $request->input('order_id'),
             'owner_email' =>  empty($request->input('orderer')) ? auth()->user()->email : $request->input('orderer'),
             'status' => 'Initiated',
             'provider' =>  $provider,
@@ -111,8 +112,8 @@ class Booty extends Model
 
         $booty->save();
 
-        orderVMCreate::dispatch($cloudProvider, $booty)->onConnection('booty-assembly-line');
-        confirmVMStatus::dispatch($cloudProvider, $booty)->onConnection('booty-assembly-line')
+        orderVMCreate::dispatch($cloudProvider, $booty, $request->input('order_id'))->onConnection('booty-assembly-line');
+        confirmVMStatus::dispatch($cloudProvider, $booty, $request->input('order_id'))->onConnection('booty-assembly-line')
             ->delay(now()->addMinutes(15));
 
         return $booty;
@@ -180,12 +181,13 @@ class Booty extends Model
      * @param [type] $provider
      * @return void
      */
-    private static function getCloudProvider($provider)
+    private static function getCloudProvider($provider, $order_id = null)
     {
         $cloudProvider = null;
 
         if (strtoupper($provider) === 'DO') {
             $cloudProvider = new DigitalOceanService();
+            $cloudProvider->setOrderId($order_id);
         }
 
         return $cloudProvider;

@@ -33,7 +33,7 @@
                 <tbody>
                     @foreach($booties as $b)
                     <tr>
-                        <th scope="row">{{ str_pad($b->id, 8, '0', STR_PAD_LEFT) }}</th>
+                        <th scope="row" style="vertical-align: middle;">{{ str_pad($b->id, 8, '0', STR_PAD_LEFT) }}</th>
                         <td style="vertical-align: middle;">
                             @if(empty($b->order_id))
                             Internal
@@ -71,24 +71,21 @@
                         </td>
                         <td style="vertical-align: middle;">
                             @if(empty($b->snapshot_id))
-                            Fresh
+                            Mother
                             @else
-                            {{$b->snapshot_id}}
+                            <a href="{{ route('snapshots.snapshot', $b->snapshot_id) }}">{{ $b->snapshot_id }}</a>
                             @endif
 
                         </td>
                         <td style="vertical-align: middle;">{{ $b->updated_at->diffForHumans() }}</td>
 
                         <td>
-                            @if($b->status === 'Booty missing')
 
-                            <a class="" href="{{ route('booty.softdelete', $b->id) }}" onclick="event.preventDefault();
-                                                        document.getElementById('soft-delete-form').submit();">Clear
-                            </a>
-
-                            <form id="soft-delete-form" action="{{ route('booty.softdelete', $b->id) }}" method="POST" style="display: none;">
+                            @if($b->status === 'Booty missing' || $b->status === 'Deleted')
+                            <form action="{{ route('booty.softdelete', $b->id) }}" method="POST">
                                 @csrf
                                 @method('DELETE')
+                                <button type="submit" class="btn btn-link">Clear</button>
                             </form>
                             @endif
                         </td>

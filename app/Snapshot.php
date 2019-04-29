@@ -12,9 +12,12 @@ use App\Jobs\orderSnapshotDelete;
 use App\Jobs\confirmSnapshotStatus;
 use Illuminate\Database\Eloquent\Model;
 use App\CloudProviders\DigitalOceanService;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Snapshot extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = ['name', 'app', 'provider', 'booty_id', 'internal_snapshot_id', 'status', 'env', 'order_id', 'owner_email'];
 
 
@@ -36,7 +39,13 @@ class Snapshot extends Model
      */
     public function origin()
     {
-        return $this->belongsTo(Booty::class, 'booty_id', 'id');
+        return $this->belongsTo(Booty::class, 'booty_id', 'id')
+        ->withDefault([
+            'source_code' => 'N/A',
+            'branch' => 'N/A',
+            'commit' => 'N/A',
+            'name' => 'Guest Author',
+        ]);
     }
 
 
@@ -46,7 +55,7 @@ class Snapshot extends Model
     {
         $booty = Booty::order($request);
 
-        $cloudProvider = self::getCloudProvider($booty->provider);
+        $cloudProvider = self::getCloudProvider($booty->provider, $request->order_id);
 
         $snapshot = new Snapshot([
             'name' => now()->format('Ymdhi') . '-',
@@ -62,11 +71,11 @@ class Snapshot extends Model
 
         $snapshot->save();
 
-        orderSnapshotCreate::dispatch($cloudProvider, $snapshot)->onConnection('booty-assembly-line')
+        orderSnapshotCreate::dispatch($cloudProvider, $snapshot, $request->input('order_id'))->onConnection('booty-assembly-line')
             ->delay(now()->addMinutes(16));
-        confirmSnapshotStatus::dispatch($cloudProvider, $snapshot)->onConnection('booty-assembly-line')
+        confirmSnapshotStatus::dispatch($cloudProvider, $snapshot, $request->input('order_id'))->onConnection('booty-assembly-line')
             ->delay(now()->addMinutes(19));
-        orderVMDelete::dispatch($cloudProvider, $booty->internal_machine_id)->onConnection('booty-assembly-line')
+        orderVMDelete::dispatch($cloudProvider, $booty->internal_machine_id, $request->input('order_id'))->onConnection('booty-assembly-line')
             ->delay(now()->addMinutes(30));
 
         return $snapshot;
@@ -88,7 +97,7 @@ class Snapshot extends Model
         }
 
         $provider = empty($request->input('provider')) ? env('DEFAULT_INFRA_PROVIDER', 'DO') : $request->input('provider');
-        $cloudProvider = self::getCloudProvider($provider);
+        $cloudProvider = self::getCloudProvider($provider, $request->order_id);
 
         $snapshot = new Snapshot([
             'name' => now()->format('Ymdhi') . '-',
@@ -104,8 +113,8 @@ class Snapshot extends Model
 
         $snapshot->save();
 
-        orderSnapshotCreate::dispatch($cloudProvider, $snapshot)->onConnection('booty-assembly-line');
-        confirmSnapshotStatus::dispatch($cloudProvider, $snapshot)->onConnection('booty-assembly-line')
+        orderSnapshotCreate::dispatch($cloudProvider, $snapshot, $request->input('order_id'))->onConnection('booty-assembly-line');
+        confirmSnapshotStatus::dispatch($cloudProvider, $snapshot, $request->input('order_id'))->onConnection('booty-assembly-line')
             ->delay(now()->addMinutes(5));
 
         return $snapshot;
@@ -137,7 +146,7 @@ class Snapshot extends Model
      */
     public function provision(String $orderId, String $orderer, $services = null)
     {
-        $cloudProvider = self::getCloudProvider($this->provider);
+        $cloudProvider = self::getCloudProvider($this->provider, $orderId);
 
         $booty = new Booty([
             'snapshot_id' => $this->id,
@@ -161,10 +170,10 @@ class Snapshot extends Model
 
         $booty->save();
 
-        orderVMProvision::dispatch($cloudProvider, $booty)->onConnection('booty-provision-line');
-        confirmVMStatus::dispatch($cloudProvider, $booty)->onConnection('booty-provision-line')
+        orderVMProvision::dispatch($cloudProvider, $booty, $orderId)->onConnection('booty-provision-line');
+        confirmVMStatus::dispatch($cloudProvider, $booty, $orderId)->onConnection('booty-provision-line')
             ->delay(now()->addSeconds(90));
-        confirmVMStatus::dispatch($cloudProvider, $booty)->onConnection('booty-provision-line')
+        confirmVMStatus::dispatch($cloudProvider, $booty, $orderId)->onConnection('booty-provision-line')
             ->delay(now()->addSeconds(180));
 
         return $booty;
@@ -223,9 +232,9 @@ class Snapshot extends Model
      */
     public function terminate($request)
     {
-        $cloudProvider = self::getCloudProvider($this->provider);
+        $cloudProvider = self::getCloudProvider($this->provider, $request->order_id);
 
-        orderSnapshotDelete::dispatch($cloudProvider, $this->internal_snapshot_id)->onConnection('booty-assembly-line');
+        orderSnapshotDelete::dispatch($cloudProvider, $this->internal_snapshot_id, $request->input('order_id'))->onConnection('booty-assembly-line');
 
         $this->status = 'Deleted';
         $this->save();
@@ -240,12 +249,13 @@ class Snapshot extends Model
      * @param [type] $provider
      * @return void
      */
-    private static function getCloudProvider($provider)
+    private static function getCloudProvider($provider, $order_id = null)
     {
         $cloudProvider = null;
 
         if (strtoupper($provider) === 'DO') {
             $cloudProvider = new DigitalOceanService();
+            $cloudProvider->setOrderId($order_id);
         }
 
         return $cloudProvider;

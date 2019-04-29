@@ -16,26 +16,31 @@ class BaseJob implements ShouldQueue
 
     protected $resource;
     protected $cloudProvider;
+    protected $order_id;
+
     // The --timeout value should always be at least 
     // several seconds shorter than your 
     // retry_after configuration value.
-    protected $timeout;
+    public $timeout = 570;
+
     // The number of times the job may be attempted.
-    protected $tries;
+    public $tries = 3;
 
     /**
      * Create a new job instance.
      * 
      * @return void
      */
-    public function __construct($cloudProvider, $resource, int $timeout = 570, int $tries = 3)
+    public function __construct($cloudProvider, $resource, string $order_id, int $timeout = 570, int $tries = 3)
     {
         $this->cloudProvider = $cloudProvider;
         $this->resource = $resource;
+        $this->order_id = $order_id;
         $this->timeout = $timeout;
         $this->tries = $tries;
 
-        Journal::info('Queue: begin job', 0, __METHOD__, $resource->order_id, [
+        Journal::info('New Job Queued.', 0, get_class($this), $this->order_id, [
+            'connection' => $this->connection,
             'queue' => $this->queue,
             'tries' => $tries,
             'timeout' => $timeout,
@@ -51,10 +56,20 @@ class BaseJob implements ShouldQueue
      */
     public function failed(\Exception $exception)
     {
-        Journal::error($exception->getMessage(), $exception->getCode(), __METHOD__, $this->resource->order_id, [
-            'queue' => $this->queue
-        ]);
-        $this->resource->status = get_called_class() . ' Failed';
-        $this->resource->save();
+        Journal::error(
+            'Job removed from Queue due to multiple failures.',
+            $exception->getCode(),
+            __METHOD__,
+            $this->order_id,
+            [
+                'connection' => $this->connection,
+                'queue' => $this->queue
+            ]
+        );
+
+        if (isset($this->resource->status)) {
+            $this->resource->status = get_called_class() . ' Failed';
+            $this->resource->save();
+        }
     }
 }
