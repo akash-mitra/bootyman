@@ -196,9 +196,7 @@ class DigitalOceanService
     {
         $cloudInitCommand = $this->cloudProvisionScript(
             $booty->app,
-            json_decode($booty->services, true),
-            'akash',
-            'pakamala'
+            json_decode($booty->services, true)
         );
 
         try {
@@ -216,7 +214,12 @@ class DigitalOceanService
             );
             $booty['internal_machine_id'] = $droplet->id;
             $booty->save();
-            Journal::info('CloudService: provision VM request processed.', 0, __METHOD__, $this->order_id);
+            Journal::info('CloudService: provision VM request processed.', 0, __METHOD__, $this->order_id, [
+                'services' => json_decode($booty->services, true),
+                'init_script' =>  $cloudInitCommand,
+                'from' => $booty->origin->internal_snapshot_id,
+                'sshkey' => $booty->sshkey
+            ]);
         } catch (Exception $e) {
             Journal::error(get_class($e) . ': ' . $e->getMessage(), $e->getCode(), __METHOD__, $this->order_id, ['booty' => $booty->toArray()]);
             throw $e;
@@ -297,7 +300,7 @@ class DigitalOceanService
         // add user service
         if ($this->serviceHas($services, 'laravel-add-user')) {
             $param = $services['laravel-add-user'];
-            $init->artisan('user:add ' . $param['name'] . ' ' . $param['email'] . ' ' . $param['password'] . ' admin');
+            $init->artisan('user:add "' . $param['name'] . '" ' . $param['email'] . ' ' . $param['password'] . ' admin');
         }
 
         // PASSPORT service

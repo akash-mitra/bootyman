@@ -5,6 +5,7 @@
 <style>
     pre {
         padding: 5px;
+        white-space: pre-wrap;
     }
 
     .string {

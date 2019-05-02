@@ -111,7 +111,7 @@
                                 <td>
                                     <pre>booty.order_id</pre>
                                 </td>
-                                <td>Order Id of the request. If no order_id is supplied, this will be 0</td>
+                                <td>Order Id of the request. If no order_id is supplied, this will be auto-generated.</td>
                             </tr>
                             <tr>
                                 <td>
@@ -125,12 +125,7 @@
                                 </td>
                                 <td>Status of the booty</td>
                             </tr>
-                            <tr>
-                                <td>
-                                    <pre>booty.order_id</pre>
-                                </td>
-                                <td>Order Id of the request. If no order_id is supplied, this will be 0</td>
-                            </tr>
+                            
                             <tr>
                                 <td>
                                     <pre>booty.provider</pre>
@@ -220,6 +215,110 @@
                 </tr>
 
             </table>
+
+
+
+
+
+            <h4>2. Create a new snapshot from existing booty</h4>
+            <p>Creates a new snapshot and stores it. This snapshot can be used to create other booties in the future</p>
+            <table class="table">
+
+                <tr>
+                    <td><strong>Endpoint</strong></td>
+                    <td><code>/api/create/snapshot</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Request Type</strong></td>
+                    <td><code>POST</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Parameters</strong></td>
+                    <td>
+                        <table class="table-sm table-borderless">
+                            <tr>
+                                <td>
+                                    <pre>booty_id</pre>
+                                </td>
+                                <td>An existing booty ID from the current application.</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>Response</strong></td>
+                    <td>
+                        <table class="table-sm table-borderless">
+                            <tr>
+                                <td>
+                                    <pre>status</pre>
+                                </td>
+                                <td>Status of this request, "in-progress" or "failed"</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <pre>message</pre>
+                                </td>
+                                <td>Human friendly message to accompany with the status</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <pre>snapshot.order_id</pre>
+                                </td>
+                                <td>Order Id of the request. If no order_id is supplied, this will be auto generated.</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <pre>snapshot.owner_email</pre>
+                                </td>
+                                <td>Orderer email ID of the request. If no email id is supplied, this will be populated with the email id of the user who owns the auth token</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <pre>snapshot.status</pre>
+                                </td>
+                                <td>Status of the snapshot</td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <pre>snapshot.provider</pre>
+                                </td>
+                                <td>Provider of the cloud infrastructure. E.g. "DO" for DigitalOcean</td>
+                            </tr>
+
+
+                            <tr>
+                                <td>
+                                    <pre>snapshot.app</pre>
+                                </td>
+                                <td>Name of the application that is configured inside the snapshot</td>
+                            </tr>
+
+                            <tr>
+                                <td>
+                                    <pre>snapshot.updated_at</pre>
+                                </td>
+                                <td>Last update datetime of the snapshot record</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <pre>snapshot.created_at</pre>
+                                </td>
+                                <td> Creation datetime of the snapshot record</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <pre>snapshot.name</pre>
+                                </td>
+                                <td>An auto-generated snapshot name</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+
+            </table>
             <!-- <h4>Curl Request Example</h4>
             <pre>curl --request POST \
   --url https://bootyman.app/api/create/booty \
@@ -258,4 +357,4 @@
         </div>
     </div>
 </div>
-@endsection   
+@endsection
