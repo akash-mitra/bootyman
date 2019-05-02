@@ -35,10 +35,10 @@ class CloudInitBash {
         public function artisan ($artisanCommands) {
                 if (is_array($artisanCommands)) {
                         foreach($artisanCommands as $artisanCommand) {
-                                $this->command('php '. $this->basedir . 'artisan ' . $artisanCommand);
+                                $this->command( '/usr/bin/php '. $this->basedir . 'artisan ' . $artisanCommand);
                         }
                 } else {
-                        $this->command('php ' . $this->basedir . 'artisan ' . $artisanCommands);
+                        $this->command( '/usr/bin/php ' . $this->basedir . 'artisan ' . $artisanCommands);
                 }
         }
 

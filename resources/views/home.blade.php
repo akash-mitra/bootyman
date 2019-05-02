@@ -2,6 +2,60 @@
 
 @section('css')
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.css">
+<style>
+    pre {
+        padding: 5px;
+    }
+
+    .string {
+        color: green;
+    }
+
+    .number {
+        color: darkorange;
+    }
+
+    .boolean {
+        color: blue;
+    }
+
+    .null {
+        color: magenta;
+    }
+
+    .key {
+        color: black;
+        font-weight: bold
+    }
+
+    table.dataTable tbody tr.shown {
+        color: indigo
+    }
+
+    table.dataTable tbody tr.shown+tr>td {
+        border-top: none
+    }
+
+    .info {
+        background-color: cornsilk;
+        color: darkslateblue;
+    }
+
+    .request {
+        background-color: aliceblue;
+        color: green;
+    }
+
+    .warning {
+        background-color: blanchedalmond;
+        color: crimson;
+    }
+
+    .error {
+        background-color: red;
+        color: white;
+    }
+</style>
 @endsection
 
 @section('content')
@@ -62,7 +116,7 @@
             <h3>Events</h3>
             <p>Events capture the requests, errors and information related to each incoming order to the system</p>
             <div class="">
-                <table class="bg-white table table-sm table-bordered table-striped1" id="events-table">
+                <table class="table table-responsive table-sm text-sm display compact" id="events-table">
                     <thead>
                         <tr>
                             <th>Order</th>
@@ -70,12 +124,13 @@
                             <th>Origin</th>
                             <th>Message</th>
                             <th>Timestamp</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
 
                 </table>
 
-                
+
             </div>
         </div>
     </div>
@@ -87,19 +142,96 @@
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.js"></script>
 
 <script>
+    function syntaxHighlight(json) {
+
+        if (typeof json != 'string') {
+            json = JSON.stringify(json, undefined, 2);
+        }
+        json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function(match) {
+            var cls = 'number';
+            if (/^"/.test(match)) {
+                if (/:$/.test(match)) {
+                    cls = 'key';
+                } else {
+                    cls = 'string';
+                }
+            } else if (/true|false/.test(match)) {
+                cls = 'boolean';
+            } else if (/null/.test(match)) {
+                cls = 'null';
+            }
+            return '<span class="' + cls + '">' + match + '</span>';
+        });
+    }
+
+
+    // this returns the HTML required to display the context information
+    function format(d) {
+        return '<pre>' + syntaxHighlight(JSON.stringify(JSON.parse(d.context), undefined, '\t')) + '</pre>';
+    }
+
+
     $(function() {
-        $('#events-table').DataTable({
+
+        // dataTable invocation
+        let table = $('#events-table').DataTable({
             processing: true,
             serverSide: true,
             ajax: '{!! route("events.datatables.data") !!}',
-            columns: [
-                {data: 'order_id', name: 'order_id'},
-                {data: 'type', name: 'type'},
-                {data: 'origin', name: 'origin'},
-                {data: 'message', name: 'message'},
-                {data: 'created_at', name: 'created_at'},
+            columns: [{
+                    data: 'order_id',
+                    name: 'order_id'
+                },
+                {
+                    data: 'type',
+                    name: 'type'
+                },
+                {
+                    data: 'origin',
+                    name: 'origin'
+                },
+                {
+                    data: 'message',
+                    name: 'message'
+                },
+                {
+                    data: 'created_at',
+                    name: 'created_at'
+                },
+                {
+                    "className": 'details-control',
+                    "orderable": false,
+                    "defaultContent": '<a href="#">Check</a>'
+                },
             ],
-            order: [[ 4, "desc" ]]
+            order: [
+                [4, "desc"],
+                [0, 'desc']
+            ],
+            rowCallback: function(row, data, index) {
+                // for changing the background color of the "type" column
+                $(row).find('td:eq(1)').addClass(data.type)
+            },
+            pageLength: 25,
+            deferRender: true
+        });
+
+        // Add event listener for opening and closing details
+        $('#events-table tbody').on('click', 'td.details-control', function() {
+            
+            var tr = $(this).closest('tr');
+            var row = table.row(tr);
+
+            if (row.child.isShown()) {
+                // This row is already open - close it
+                row.child.hide();
+                tr.removeClass('shown');
+            } else {
+                // Open this row
+                row.child(format(row.data())).show();
+                tr.addClass('shown');
+            }
         });
     });
 </script>

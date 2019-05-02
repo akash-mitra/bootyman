@@ -30,20 +30,22 @@ class HomeController extends Controller
         $booties = Booty::where('status', 'Live')->count();
         $snapshots = Snapshot::where('status', '!=', 'Deleted')->count();
         $tokens = \DB::table('oauth_access_tokens')->where('revoked', 0)->count();
-        // $events = Journal::orderBy('id', 'desc')->simplePaginate(20);
+        $events = Journal::orderBy('id', 'desc')->take(25)->get();
         // $events = DataTables::eloquent(Journal::query())->make(true);
         return view('home')
             ->with('booties', $booties)
             ->with('snapshots', $snapshots)
             ->with('tokens', $tokens)
-            // ->with('events', $events)
+            ->with('events', $events)
             ->with('jobs', Queue::size());
     }
 
 
     public function anyData()
     {
-        return DataTables::of( Journal::query())->make(true);
+        return DataTables::of(Journal::query())
+            ->rawColumns(['context']) // do not want JSON to be escaped in the view
+            ->make(true);
     }
 
     public function snapshots()
