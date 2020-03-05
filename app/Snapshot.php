@@ -4,7 +4,7 @@ namespace App;
 
 use App\Booty;
 use Illuminate\Http\Request;
-use App\Jobs\confirmVMStatus;
+use App\Jobs\finalizeBootyStatus;
 use App\Jobs\orderVMDelete;
 use App\Jobs\orderVMProvision;
 use App\Jobs\orderSnapshotCreate;
@@ -171,9 +171,9 @@ class Snapshot extends Model
         $booty->save();
 
         orderVMProvision::dispatch($cloudProvider, $booty, $orderId)->onConnection('booty-provision-line');
-        confirmVMStatus::dispatch($cloudProvider, $booty, $orderId)->onConnection('booty-provision-line')
+        finalizeBootyStatus::dispatch($cloudProvider, $booty, $orderId)->onConnection('booty-provision-line')
             ->delay(now()->addSeconds(90));
-        confirmVMStatus::dispatch($cloudProvider, $booty, $orderId)->onConnection('booty-provision-line')
+        finalizeBootyStatus::dispatch($cloudProvider, $booty, $orderId)->onConnection('booty-provision-line')
             ->delay(now()->addSeconds(180));
 
         return $booty;

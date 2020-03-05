@@ -7,6 +7,7 @@ use App\Snapshot;
 use App\Journal;
 use Exception;
 use GrahamCampbell\DigitalOcean\Facades\DigitalOcean;
+use Illuminate\Support\Str;
 
 class DigitalOceanService
 {
@@ -228,11 +229,14 @@ class DigitalOceanService
 
     public function finaliseBooty(Booty $booty)
     {
+        if ($booty->status == 'Live') 
+            return;
+
         $status = 'Live';
         try {
             $droplet = DigitalOcean::droplet()->getById($booty->internal_machine_id);
             $booty->ip = $droplet->networks[0]->ipAddress;
-            $booty->ssl_renewed_at = now();
+            Journal::info('CloudService: VM Provisioned.', 0, __METHOD__, $this->order_id);
         } catch (\Exception $e) {
             $status = 'Provisioning Error';
             Journal::warning($e->getMessage(), $e->getCode(), __METHOD__, $this->order_id, ['booty' => $booty->toArray()]);
@@ -240,6 +244,21 @@ class DigitalOceanService
 
         $booty->status = $status;
         $booty->save();
+
+        $password = Str::random(8);
+
+        Journal::info('CloudService: Admin Password Set.', 0, __METHOD__, $this->order_id, [
+            'ipaddress' => $booty->ip,
+            'email' => $booty->owner_email,
+            'password' => $password
+        ]);
+
+        $localpath = env('BOOTYMAN_ROOT');
+        $port = env('SSH_PORT');
+        $key = env('PRIVATE_KEY');
+        $remotepath = env('WEBAPP_ROOT');
+
+        shell_exec("cd " . $localpath . " && envoy run deploy --ipaddress=" . $booty->ip . " --port=" . $port . " --key=" . $key . " --remotepath=" . $remotepath . " --email=" . $booty->owner_email . " --password=" . $password);
     }
 
 
